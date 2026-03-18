@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.9
 
 require (
-	github.com/grandper/go-screenplay v1.0.0
+	github.com/grandper/go-screenplay v1.1.0
 	github.com/nats-io/nats-server/v2 v2.12.1
 	github.com/nats-io/nats.go v1.47.0
 	github.com/stretchr/testify v1.10.0

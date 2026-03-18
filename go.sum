@@ -4,8 +4,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/go-tpm v0.9.6 h1:Ku42PT4LmjDu1H5C5ISWLlpI1mj+Zq7sPGKoRw2XROA=
 github.com/google/go-tpm v0.9.6/go.mod h1:h9jEsEECg7gtLis0upRBQU+GhYVH6jMjrFxI8u6bVUY=
-github.com/grandper/go-screenplay v1.0.0 h1:z2FhBu5CoUApL3Ri9ydhXBTzr11QPKCsDeJ75CZpSYE=
-github.com/grandper/go-screenplay v1.0.0/go.mod h1:HCz2W3QywezIXtXRsMmhuNz75u6yQLhf6qtoBZzX9GI=
+github.com/grandper/go-screenplay v1.1.0 h1:PnqdumFhAO2KMy8ilnIwId0SaduAHnSvNEavJilZIVw=
+github.com/grandper/go-screenplay v1.1.0/go.mod h1:HCz2W3QywezIXtXRsMmhuNz75u6yQLhf6qtoBZzX9GI=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/minio/highwayhash v1.0.3 h1:kbnuUMoHYyVl7szWjSxJnxw11k2U709jqFPPmIUyD6Q=
