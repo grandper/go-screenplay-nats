@@ -20,6 +20,8 @@ func TestConnectToNATSAction_PerformAs(t *testing.T) {
 	t.Run("connects to NATS server", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			require.NoError(t, adam.AttemptsTo(action.ConnectToNATS().At(url)))
+			// Verify the ability was updated in the actor by performing a subsequent action.
+			require.NoError(t, adam.AttemptsTo(action.SubscribeTo("test.subject")))
 		})
 
 		t.Run("fail when the URL is empty", func(t *testing.T) {
