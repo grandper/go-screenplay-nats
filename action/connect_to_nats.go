@@ -40,9 +40,11 @@ func (na *ConnectToNATSAction) PerformAs(theActor *screenplay.Actor) error {
 	if na.url == "" {
 		return ErrURLIsEmpty
 	}
-	if communicateWithNATS.UsingServerAt(na.url) == nil {
+	newAbility := communicateWithNATS.UsingServerAt(na.url)
+	if newAbility == nil {
 		return fmt.Errorf("%w at %s", ErrFailedToConnect, na.url)
 	}
+	theActor.WhoCan(newAbility)
 	return nil
 }
 
