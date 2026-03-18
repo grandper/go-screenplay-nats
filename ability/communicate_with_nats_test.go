@@ -268,6 +268,22 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
 
+		t.Run("stores received messages", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			defer func() {
+				assert.NoError(t, communicateWithNATS.Forget())
+			}()
+
+			require.NoError(t, communicateWithNATS.SubscribeAsyncTo(subject, 0))
+			require.NoError(t, communicateWithNATS.Publish(ability.Message().To(subject).Containing(message)))
+
+			assert.Eventually(t, func() bool {
+				msg, err := communicateWithNATS.LastMessageForSubject(subject)
+				return err == nil && string(msg.Data) == string(message)
+			}, testTimeout, tickInterval)
+		})
+
 		t.Run("successfully with auto unsubscribe", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)

@@ -175,7 +175,9 @@ func (c *CommunicateWithNATSAbility) SubscribeAsyncTo(subject string, maxWantedM
 	}
 
 	sub, err := c.nc.Subscribe(subject, func(m *nats.Msg) {
-		fmt.Printf("Received a message: %s\n", string(m.Data))
+		c.mutex.Lock()
+		c.receivedMessages[subject] = append(c.receivedMessages[subject], m)
+		c.mutex.Unlock()
 	})
 	if err != nil {
 		return err
