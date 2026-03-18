@@ -18,7 +18,10 @@ func (q *TheNATSConnectionQuestion) String() string {
 	return "connection to NATS"
 }
 
-// AnsweredBy returns the answer that an actor provided to the question.
+// AnsweredBy returns a point-in-time snapshot of the connection state.
+// Each call captures the state at that instant; the returned *Connection
+// is immutable and becomes stale as soon as the underlying connection changes.
+// Always re-ask this question rather than caching the result.
 func (q *TheNATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any, error) {
 	theActorCommunicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
 	if err != nil {
