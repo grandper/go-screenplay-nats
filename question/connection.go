@@ -1,6 +1,10 @@
 package question
 
-// Connection represents a connection to a NATS server.
+// Connection represents a point-in-time snapshot of a NATS connection's state.
+// The values are captured at the moment the NATSConnection question is answered
+// and will not reflect any state changes that occur after that point.
+// Do not cache a *Connection across assertions; re-ask the question each time
+// to obtain a fresh snapshot.
 type Connection struct {
 	wasClosed       bool
 	wasDisconnected bool
