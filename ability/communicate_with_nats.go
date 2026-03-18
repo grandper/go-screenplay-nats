@@ -151,7 +151,14 @@ func (c *CommunicateWithNATSAbility) Request(message *NATSMessage, requestTimeou
 		return nil, ErrSubjectIsEmpty
 	}
 
-	return c.nc.RequestMsg(message.toNATSMessage(), requestTimeout)
+	response, err := c.nc.RequestMsg(message.toNATSMessage(), requestTimeout)
+	if err != nil {
+		return nil, err
+	}
+	c.mutex.Lock()
+	c.receivedMessages[message.Subject()] = append(c.receivedMessages[message.Subject()], response)
+	c.mutex.Unlock()
+	return response, nil
 }
 
 // Respond sends a response to a message.

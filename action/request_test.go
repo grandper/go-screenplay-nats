@@ -8,6 +8,10 @@ import (
 	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay-nats/action"
 	"github.com/grandper/go-screenplay-nats/fixture"
+	"github.com/grandper/go-screenplay-nats/question"
+	act "github.com/grandper/go-screenplay/action"
+	"github.com/grandper/go-screenplay/action/see"
+	"github.com/grandper/go-screenplay/resolution/is"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +39,24 @@ func TestRequest(t *testing.T) {
 				assert.NoError(t, sub.Unsubscribe())
 			}()
 			require.NoError(t, adam.AttemptsTo(action.Request(aMessage)))
+		})
+
+		t.Run("stores the response for later retrieval", func(t *testing.T) {
+			alice := screenplay.ActorNamed("Alice").WhoCan(ability.CommunicateWithNATS().Using(nc))
+
+			sub, err := nc.Subscribe(subject, func(msg *nats.Msg) {
+				assert.NoError(t, msg.Respond([]byte("response")))
+			})
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, sub.Unsubscribe())
+			}()
+
+			require.NoError(t, alice.AttemptsTo(action.Request(aMessage)))
+			require.NoError(t, alice.Should(act.Eventually(see.The(
+				question.BodyOfTheLastMessage().From(subject),
+				is.EqualTo("response"),
+			))))
 		})
 
 		t.Run("fails when the response is not fast enough", func(t *testing.T) {
