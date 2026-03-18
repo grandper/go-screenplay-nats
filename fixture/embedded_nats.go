@@ -29,7 +29,7 @@ func RunNATSServer(t *testing.T) *server.Server {
 	t.Helper()
 
 	opts := natstest.DefaultTestOptions
-	opts.Port = 4222
+	opts.Port = -1
 	natsServer := natstest.RunServer(&opts)
 	t.Cleanup(natsServer.Shutdown)
 	assert.True(t, natsServer.ReadyForConnections(connectionTimeout))

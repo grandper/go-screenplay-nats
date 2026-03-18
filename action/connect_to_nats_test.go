@@ -31,7 +31,8 @@ func TestConnectToNATSAction_PerformAs(t *testing.T) {
 
 		t.Run("fails when the connection cannot be established", func(t *testing.T) {
 			const invalidURL = "nats://invalid:4222"
-			require.ErrorIs(t, adam.AttemptsTo(action.ConnectToNATS().At(invalidURL)),
+			eve := screenplay.ActorNamed("Eve").WhoCan(ability.CommunicateWithNATS())
+			require.ErrorIs(t, eve.AttemptsTo(action.ConnectToNATS().At(invalidURL)),
 				action.ErrFailedToConnect)
 		})
 
