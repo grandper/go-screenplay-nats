@@ -8,6 +8,7 @@ import (
 	"github.com/grandper/go-screenplay-nats/action"
 	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,6 +75,9 @@ func TestSubscribeTo(t *testing.T) {
 		assert.Eventually(t, func() bool {
 			return nc.NumSubscriptions() >= 1
 		}, timeout, waitInterval)
+		// Verify the subscription is truly async: NextMsg is illegal on async subscriptions.
+		require.NoError(t, nc.Publish(subject, []byte("hello")))
+		require.ErrorIs(t, adam.AttemptsTo(action.ReceiveFrom(subject)), nats.ErrSyncSubRequired)
 	})
 
 	t.Run("can subscribe for a given number of messages", func(t *testing.T) {
