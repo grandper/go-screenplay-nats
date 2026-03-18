@@ -90,7 +90,7 @@ func (a *RequestAction) timeoutAsString() string {
 }
 
 func pluralOrSingular(value int, unit string) string {
-	if value > 1 {
+	if value != 1 {
 		return fmt.Sprintf("%d %ss", value, unit)
 	}
 	return fmt.Sprintf("%d %s", value, unit)

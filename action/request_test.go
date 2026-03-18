@@ -107,7 +107,7 @@ func TestRequest(t *testing.T) {
 		assert.Equal(t, "send a nil request", actionNil.String())
 
 		action2 := action.Request(aMessage).For(0).Second()
-		assert.Equal(t, "send a request to test.subject for 0 second", action2.String())
+		assert.Equal(t, "send a request to test.subject for 0 seconds", action2.String())
 
 		action3 := action.Request(aMessage).For(1).Second()
 		assert.Equal(t, "send a request to test.subject for 1 second", action3.String())
@@ -116,7 +116,7 @@ func TestRequest(t *testing.T) {
 		assert.Equal(t, "send a request to test.subject for 6 seconds", action4.String())
 
 		action5 := action.Request(aMessage).For(0).Millisecond()
-		assert.Equal(t, "send a request to test.subject for 0 millisecond", action5.String())
+		assert.Equal(t, "send a request to test.subject for 0 milliseconds", action5.String())
 
 		action6 := action.Request(aMessage).For(1).Millisecond()
 		assert.Equal(t, "send a request to test.subject for 1 millisecond", action6.String())
