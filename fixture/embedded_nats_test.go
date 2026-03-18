@@ -41,3 +41,11 @@ func TestRunNATSServer(t *testing.T) {
 	assert.NotNil(t, natsServer)
 	assert.True(t, natsServer.ReadyForConnections(2*time.Second))
 }
+
+func TestRunNATSServer_MultipleInstancesDoNotConflict(t *testing.T) {
+	server1 := fixture.RunNATSServer(t)
+	server2 := fixture.RunNATSServer(t)
+	assert.NotNil(t, server1)
+	assert.NotNil(t, server2)
+	assert.NotEqual(t, server1.ClientURL(), server2.ClientURL())
+}

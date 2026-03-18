@@ -43,9 +43,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 	t.Run("can be created from a NATS server url", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
-			ip, err := nc.GetClientIP()
-			require.NoError(t, err)
-			require.NotNil(t, ability.CommunicateWithNATS().UsingServerAt(ip.String()))
+			require.NotNil(t, ability.CommunicateWithNATS().UsingServerAt(nc.ConnectedUrl()))
 		})
 
 		t.Run("cannot be created without empty url", func(t *testing.T) {
