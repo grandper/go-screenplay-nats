@@ -1,15 +1,8 @@
 package action
 
 import (
-	"errors"
-
 	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
-)
-
-var (
-	// ErrSubjectIsEmpty is returned when the subject for the message is empty.
-	ErrSubjectIsEmpty = errors.New("subject is empty")
 )
 
 // PublishAction is an action that publishes a message to a NATS subject.
