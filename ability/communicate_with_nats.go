@@ -476,5 +476,13 @@ func (c *CommunicateWithNATSAbility) ConnectionWasReconnected() bool {
 
 // Forget clean up the ability's resources.
 func (c *CommunicateWithNATSAbility) Forget() error {
+	if c == nil || c.nc == nil {
+		return nil
+	}
+	for _, sub := range c.subs {
+		_ = sub.Unsubscribe()
+	}
+	c.subs = map[string]*nats.Subscription{}
+	c.nc.Close()
 	return nil
 }

@@ -896,6 +896,29 @@ func TestCommunicateWithNATS(t *testing.T) {
 		})
 	})
 
+	t.Run("forgets its resources", func(t *testing.T) {
+		t.Run("closes the connection", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			require.NoError(t, communicateWithNATS.Forget())
+			assert.True(t, nc.IsClosed())
+		})
+
+		t.Run("unsubscribes all subscriptions", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			require.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
+			assert.Equal(t, 1, nc.NumSubscriptions())
+			require.NoError(t, communicateWithNATS.Forget())
+			assert.Equal(t, 0, nc.NumSubscriptions())
+		})
+
+		t.Run("does nothing when the connection is nil", func(t *testing.T) {
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nil)
+			require.NoError(t, communicateWithNATS.Forget())
+		})
+	})
+
 	t.Run("provides all the messages", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
