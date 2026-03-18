@@ -64,18 +64,23 @@ func (c *CommunicateWithNATSAbility) Using(nc *nats.Conn) *CommunicateWithNATSAb
 	if nc == nil {
 		return nil
 	}
+	if c != nil {
+		return c
+	}
 	communicateWithNATS := &CommunicateWithNATSAbility{
 		nc:               nc,
 		subs:             make(map[string]*nats.Subscription),
 		receivedMessages: make(map[string][]*nats.Msg),
 	}
-	communicateWithNATS.nc = nc
 	communicateWithNATS.setupHandlers()
 	return communicateWithNATS
 }
 
 // UsingServerAt establishes a connection to the NATS server at the specified URL.
 func (c *CommunicateWithNATSAbility) UsingServerAt(url string) *CommunicateWithNATSAbility {
+	if c != nil {
+		return c
+	}
 	if url == "" {
 		return nil
 	}

@@ -25,6 +25,19 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Nil(t, ability.CommunicateWithNATS())
 			assert.Nil(t, ability.CommunicateWithNATS().Using(nil))
 		})
+
+		t.Run("does not replace an already-initialized ability", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			a := ability.CommunicateWithNATS().Using(nc)
+			require.NotNil(t, a)
+			require.NoError(t, a.SubscribeTo("test.subject", 0))
+			assert.Equal(t, 1, nc.NumSubscriptions())
+
+			same := a.Using(nc)
+			assert.Same(t, a, same)
+			assert.Equal(t, 1, nc.NumSubscriptions())
+			require.NoError(t, a.Forget())
+		})
 	})
 
 	t.Run("can be created from a NATS server url", func(t *testing.T) {
@@ -41,6 +54,19 @@ func TestCommunicateWithNATS(t *testing.T) {
 
 		t.Run("cannot be created with invalid url", func(t *testing.T) {
 			require.Nil(t, ability.CommunicateWithNATS().UsingServerAt("foobar"))
+		})
+
+		t.Run("does not replace an already-initialized ability", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			a := ability.CommunicateWithNATS().Using(nc)
+			require.NotNil(t, a)
+			require.NoError(t, a.SubscribeTo("test.subject", 0))
+			assert.Equal(t, 1, nc.NumSubscriptions())
+
+			same := a.UsingServerAt(nc.ConnectedUrl())
+			assert.Same(t, a, same)
+			assert.Equal(t, 1, nc.NumSubscriptions())
+			require.NoError(t, a.Forget())
 		})
 	})
 
