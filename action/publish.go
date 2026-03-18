@@ -35,6 +35,9 @@ func (s *PublishAction) PerformAs(theActor *screenplay.Actor) error {
 
 // String returns a string representation of the action.
 func (s *PublishAction) String() string {
+	if s.message == nil {
+		return "publish a nil message"
+	}
 	return "publish a message to " + s.message.Subject()
 }
 

@@ -68,5 +68,8 @@ func TestPublish(t *testing.T) {
 	t.Run("implements the stringer interface", func(t *testing.T) {
 		action1 := action.Publish(aMessage)
 		assert.Equal(t, "publish a message to test.subject", action1.String())
+
+		action2 := action.Publish(nil)
+		assert.Equal(t, "publish a nil message", action2.String())
 	})
 }
