@@ -81,7 +81,16 @@ func (l *SubscribeToAction) PerformAs(theActor *screenplay.Actor) error {
 	if l.subject == "" {
 		return ability.ErrSubjectIsEmpty
 	}
-	return communicateWithNATS.SubscribeTo(l.subject, l.maxWantedMessages)
+	if l.queue != "" {
+		if l.synchronous {
+			return communicateWithNATS.SubscribeToQueue(l.subject, l.queue, l.maxWantedMessages)
+		}
+		return communicateWithNATS.SubscribeToQueueAsync(l.subject, l.queue, l.maxWantedMessages)
+	}
+	if l.synchronous {
+		return communicateWithNATS.SubscribeTo(l.subject, l.maxWantedMessages)
+	}
+	return communicateWithNATS.SubscribeAsyncTo(l.subject, l.maxWantedMessages)
 }
 
 // String returns a string representation of the action.
