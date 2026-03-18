@@ -76,6 +76,9 @@ func (a *RequestAction) PerformAs(theActor *screenplay.Actor) error {
 
 // String returns a string representation of the action.
 func (a *RequestAction) String() string {
+	if a.message == nil {
+		return "send a nil request"
+	}
 	return "send a request to " + a.message.Subject() + " for " + a.timeoutAsString()
 }
 
