@@ -240,7 +240,9 @@ func (c *CommunicateWithNATSAbility) SubscribeToQueueAsync(subject, queue string
 	// using queuing semantics. You can have as many queue groups as you wish.
 	// Normal subscribers will continue to work as expected.
 	sub, err := c.nc.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
+		c.mutex.Lock()
 		c.receivedMessages[subject] = append(c.receivedMessages[subject], msg)
+		c.mutex.Unlock()
 	})
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to subject %s with queue %s: %w", subject, queue, err)
@@ -328,7 +330,9 @@ func (c *CommunicateWithNATSAbility) ReceiveNextMessageFor(ctx context.Context, 
 		return fmt.Errorf("failed to get next msg from NATS for subject %s: %w", subject, err)
 	}
 
+	c.mutex.Lock()
 	c.receivedMessages[subject] = append(c.receivedMessages[subject], msg)
+	c.mutex.Unlock()
 	return nil
 }
 
@@ -357,7 +361,9 @@ func (c *CommunicateWithNATSAbility) ReceiveAllMessagesFor(ctx context.Context, 
 		if err != nil {
 			return fmt.Errorf("failed to get next msg from NATS for subject %s: %w", subject, err)
 		}
+		c.mutex.Lock()
 		c.receivedMessages[subject] = append(c.receivedMessages[subject], msg)
+		c.mutex.Unlock()
 	}
 	return nil
 }
@@ -386,8 +392,10 @@ func (c *CommunicateWithNATSAbility) LastMessageForSubject(subject string) (*nat
 		return nil, ErrNATSConnectionNotSet
 	}
 
+	c.mutex.RLock()
 	messages := c.receivedMessages[subject]
 	numMessages := len(messages)
+	c.mutex.RUnlock()
 	if numMessages == 0 {
 		return nil, fmt.Errorf("%w %s", ErrNoMessageForSubject, subject)
 	}
@@ -405,7 +413,9 @@ func (c *CommunicateWithNATSAbility) AllMessagesForSubject(subject string) ([]*n
 		return nil, ErrNATSConnectionNotSet
 	}
 
+	c.mutex.RLock()
 	messages, ok := c.receivedMessages[subject]
+	c.mutex.RUnlock()
 	if ok {
 		return messages, nil
 	}
@@ -418,6 +428,8 @@ func (c *CommunicateWithNATSAbility) AllMessages() ([]*nats.Msg, error) {
 		return nil, ErrNATSConnectionNotSet
 	}
 
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	numMessages := c.allMessageCount()
 	allMessages := make([]*nats.Msg, 0, numMessages)
 	for _, messages := range c.receivedMessages {
