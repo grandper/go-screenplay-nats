@@ -881,7 +881,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, message, msg.Data)
 
-			msg, err = communicateWithNATS.LastMessageForSubject("unknown")
+			_, err = communicateWithNATS.LastMessageForSubject("unknown")
 			require.ErrorIs(t, err, ability.ErrNoMessageForSubject)
 		})
 

@@ -19,7 +19,6 @@ import (
 func TestReceive(t *testing.T) {
 	const subject = "test.subject"
 	content := []byte("hello")
-	const timeout = 2 * time.Second
 	const waitInterval = 100 * time.Millisecond
 
 	nc := fixture.CreateEmbeddedNATSServer(t)

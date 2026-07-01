@@ -3,7 +3,6 @@ package action_test
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay-nats/action"
@@ -21,8 +20,6 @@ import (
 func TestRequest(t *testing.T) {
 	const subject = "test.subject"
 	var content = []byte("Hello, NATS!")
-	const timeout = 2 * time.Second
-	const waitInterval = 100 * time.Millisecond
 
 	aMessage := ability.Message().To(subject).Containing(content)
 
