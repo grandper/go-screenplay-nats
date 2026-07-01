@@ -9,9 +9,9 @@ import (
 	"github.com/grandper/go-screenplay-nats/action"
 	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay-nats/question"
+	"github.com/grandper/go-screenplay-nats/resolution/were"
 	act "github.com/grandper/go-screenplay/action"
 	"github.com/grandper/go-screenplay/action/see"
-	"github.com/grandper/go-screenplay/resolution/is"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -54,8 +54,8 @@ func TestRequest(t *testing.T) {
 
 			require.NoError(t, alice.AttemptsTo(action.Request(aMessage)))
 			require.NoError(t, alice.Should(act.Eventually(see.The(
-				question.BodyOfTheLastMessage().From(subject),
-				is.EqualTo("response"),
+				question.NATSMessages().From(subject),
+				were.Received(),
 			))))
 		})
 

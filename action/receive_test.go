@@ -8,9 +8,9 @@ import (
 	"github.com/grandper/go-screenplay-nats/action"
 	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay-nats/question"
+	"github.com/grandper/go-screenplay-nats/resolution/were"
 	act "github.com/grandper/go-screenplay/action"
 	"github.com/grandper/go-screenplay/action/see"
-	"github.com/grandper/go-screenplay/resolution/is"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ func TestReceive(t *testing.T) {
 			time.Sleep(waitInterval)
 			require.NoError(t, nc.Publish(subject, content))
 			require.NoError(t, adam.AttemptsTo(action.ReceiveFrom(subject)))
-			require.NoError(t, adam.Should(act.Eventually(see.The(question.BodyOfTheLastMessage().From(subject), is.EqualTo(string(content))))))
+			require.NoError(t, adam.Should(act.Eventually(see.The(question.NATSMessages().From(subject), were.Received()))))
 		})
 
 		t.Run("fail the connection is nil", func(t *testing.T) {

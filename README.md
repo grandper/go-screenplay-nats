@@ -109,12 +109,6 @@ err := actor.AttemptsTo(action.Flush())
 
 ## Questions
 
-### TheBodyOfTheLastMessage
-The `TheBodyOfTheLastMessage` question allows an actor to retrieve the body of the last message received on a specific NATS subject. It can be used as follows:
-```go
-err := actor.Should(see.The(question.BodyOfTheLastMessage().From("subject"), contains.TheText("Hello, World!")))
-```
-
 ### NATSConnection
 The `NATSConnection` question allows an actor to retrieve the underlying NATS connection. It can be used as follows:
 ```go
