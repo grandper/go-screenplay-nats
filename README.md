@@ -6,13 +6,13 @@ The `Screenplay` pattern is a design pattern for writing high-quality, maintaina
 In this document, we describe how to develop NATS scenarios using the Screenplay pattern and this package.
 
 ## Ability
-This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability can be instantiated with a NATS server URL and optional connection options.
+This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability can be instantiated from an existing NATS connection using `Using(nc)`, or directly from a server URL using `UsingServerAt("nats://localhost:4222")`.
 
 First, import the package:
 ```go
 import (
     "github.com/nats-io/nats.go"
-    "github.com/grandper/go-screenplay"
+    "github.com/grandper/go-screenplay/screenplay"
     "github.com/grandper/go-screenplay-nats/ability"
     "github.com/grandper/go-screenplay-nats/action"
     "github.com/grandper/go-screenplay-nats/question"
@@ -25,7 +25,7 @@ nc, _ := nats.Connect("nats://localhost:4222", nats.UserInfo("username", "passwo
 ```
 Finally, create an actor and give it the `CommunicateWithNATS` ability:
 ```go
-actor := screenplay.AnActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
 ```
 
 > **_NOTE:_** Since the connection is not created by the actor, you are responsible for cleaning up the connection when it is no longer needed.
@@ -89,16 +89,40 @@ The `UnsubscribeFrom` action allows an actor to unsubscribe from a NATS subject.
 err := actor.AttemptsTo(action.UnsubscribeFrom("foobar"))
 ```
 
-### SendMessage
+### Publish
 Messages are composed of:
 - A subject.
 - A payload in the form of a byte array.
 - Any number of header fields.
 - An optional 'reply' address field.
 
-The `SendMessage` action allows an actor to publish a message to a NATS subject. It can be used as follows:
+A message is built with `ability.Message()`:
 ```go
-err := actor.AttemptsTo(action.SendMessage([]byte("Hello, World!")).To("subject").WithHeaders(map[string]string{"key": "value"}).WithReply("reply-subject"))
+message := ability.Message().
+    To("subject").
+    Containing([]byte("Hello, World!")).
+    WithHeader("key", "value").
+    ToBeRepliedTo("reply-subject")
+```
+Additional headers can be added with `WithHeaders(nats.Header{...})`.
+
+The `Publish` action allows an actor to publish a message to a NATS subject. It can be used as follows:
+```go
+err := actor.AttemptsTo(action.Publish(message))
+```
+
+### Request
+The `Request` action allows an actor to publish a message and wait for a reply. The response is stored and can later be retrieved with the `NATSMessages` question. By default the request times out after 5 seconds; use `For` to change the timeout:
+```go
+err := actor.AttemptsTo(action.Request(message))
+err := actor.AttemptsTo(action.Request(message).For(2).Seconds())
+err := actor.AttemptsTo(action.Request(message).For(500).Milliseconds())
+```
+
+### ReceiveFrom
+The `ReceiveFrom` action makes an actor receive the next message from a subject it has subscribed to. The received message is stored and can later be retrieved with the `NATSMessages` question. It can be used as follows:
+```go
+err := actor.AttemptsTo(action.ReceiveFrom("subject"))
 ```
 
 ### Flush
