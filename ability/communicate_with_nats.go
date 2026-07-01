@@ -172,6 +172,14 @@ func (c *CommunicateWithNATSAbility) Respond(m *nats.Msg, response string) error
 	return m.Respond([]byte(response))
 }
 
+// Flush forces a flush of the buffered publish operations on the NATS connection.
+func (c *CommunicateWithNATSAbility) Flush() error {
+	if c == nil || c.nc == nil {
+		return ErrNATSConnectionNotSet
+	}
+	return c.nc.Flush()
+}
+
 // SubscribeAsyncTo subscribes asynchronously to a subject.
 func (c *CommunicateWithNATSAbility) SubscribeAsyncTo(subject string, maxWantedMessage int) error {
 	if subject == "" {

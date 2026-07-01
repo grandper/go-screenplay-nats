@@ -204,6 +204,23 @@ func TestCommunicateWithNATS(t *testing.T) {
 		})
 	})
 
+	t.Run("flushes the connection", func(t *testing.T) {
+		t.Run("successfully", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			defer nc.Close()
+
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			require.NoError(t, communicateWithNATS.Publish(ability.Message().To(subject).Containing(message)))
+			assert.NoError(t, communicateWithNATS.Flush())
+		})
+
+		t.Run("fails when the connection is nil", func(t *testing.T) {
+			communicateWithNATS := ability.CommunicateWithNATS().Using(nil)
+			err := communicateWithNATS.Flush()
+			assert.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
+		})
+	})
+
 	t.Run("sends requests", func(t *testing.T) {
 		const requestTimeout = time.Second
 		t.Run("successfully", func(t *testing.T) {

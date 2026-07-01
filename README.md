@@ -101,6 +101,12 @@ The `SendMessage` action allows an actor to publish a message to a NATS subject.
 err := actor.AttemptsTo(action.SendMessage([]byte("Hello, World!")).To("subject").WithHeaders(map[string]string{"key": "value"}).WithReply("reply-subject"))
 ```
 
+### Flush
+The `Flush` action allows an actor to force a flush of the buffered publish operations on the NATS connection. It can be used as follows:
+```go
+err := actor.AttemptsTo(action.Flush())
+```
+
 ## Questions
 
 ### TheBodyOfTheLastMessage
