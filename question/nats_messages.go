@@ -42,4 +42,4 @@ func (q *NATSMessagesQuestion) AnsweredBy(theActor *screenplay.Actor) (any, erro
 }
 
 // NATSMessagesQuestion implements the screenplay.Question interface.
-var _ screenplay.Question = &NATSMessagesQuestion{}
+var _ screenplay.Question = (*NATSMessagesQuestion)(nil)

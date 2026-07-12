@@ -1,4 +1,4 @@
-package was
+package been
 
 import (
 	"errors"
@@ -8,16 +8,16 @@ import (
 )
 
 var (
-	// ErrInvalidObjectType is returned when the object is not a Connection.
-	ErrInvalidObjectType = errors.New("invalid object type: expect a Connection")
+	// ErrNotConnection is returned when the object is not a Connection.
+	ErrNotConnection = errors.New("invalid object type: expect a Connection")
 )
 
-// Closed is a matcher to tell if the connection was closed at some point.
+// Closed is a matcher to tell if the connection has been closed at some point.
 func Closed() *ClosedResolution {
 	return &ClosedResolution{}
 }
 
-// ClosedResolution is a matcher to tell if the connection was closed at some point.
+// ClosedResolution is a matcher to tell if the connection has been closed at some point.
 type ClosedResolution struct{}
 
 // Resolve creates a matcher to make an assertion.
@@ -29,12 +29,15 @@ func (r *ClosedResolution) Resolve() screenplay.Matcher {
 		case nil:
 			return false, nil
 		default:
-			return false, ErrInvalidObjectType
+			return false, ErrNotConnection
 		}
 	}
 }
 
-// String describe the resolution's expectation.
+// String describes the resolution's expectation.
 func (r *ClosedResolution) String() string {
-	return "was closed"
+	return "been closed"
 }
+
+// ClosedResolution implements the screenplay.Resolution interface.
+var _ screenplay.Resolution = (*ClosedResolution)(nil)

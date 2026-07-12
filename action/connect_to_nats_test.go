@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConnectToNATSAction_PerformAs(t *testing.T) {
+func TestConnectToNATS(t *testing.T) {
 	natsServer := fixture.RunNATSServer(t)
 
 	url := natsServer.ClientURL()

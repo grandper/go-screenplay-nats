@@ -1,11 +1,11 @@
 package action
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/timing"
 )
 
 // DefaultRequestTimeout is the default timeout for a NATS request.
@@ -13,55 +13,27 @@ const DefaultRequestTimeout = 5 * time.Second
 
 // RequestAction is an action that sends a request to a NATS subject.
 type RequestAction struct {
-	message *ability.NATSMessage
-	timeout time.Duration
-	unit    string
+	durationBuilder *timing.DurationBuilder[RequestAction]
+	message         *ability.NATSMessage
+	timeout         time.Duration
 }
 
 // Request sends a request to a NATS subject.
 func Request(message *ability.NATSMessage) *RequestAction {
-	return &RequestAction{
+	action := &RequestAction{
 		message: message,
 		timeout: DefaultRequestTimeout,
-		unit:    "second",
 	}
+	action.durationBuilder = timing.NewDurationBuilder(action, &action.timeout)
+	action.durationBuilder.For(int(DefaultRequestTimeout / time.Second)).Seconds()
+
+	return action
 }
 
-// For sets the timeout for the request.
-func (a *RequestAction) For(value int) *TimeBuilder {
-	return &TimeBuilder{
-		action: a,
-		value:  value,
-	}
-}
-
-type TimeBuilder struct {
-	action *RequestAction
-	value  int
-}
-
-// Seconds sets the timeout in seconds.
-func (b *TimeBuilder) Seconds() *RequestAction {
-	b.action.timeout = time.Duration(b.value) * time.Second
-	b.action.unit = "second"
-	return b.action
-}
-
-// Second sets the timeout in seconds.
-func (b *TimeBuilder) Second() *RequestAction {
-	return b.Seconds()
-}
-
-// Milliseconds sets the timeout in milliseconds.
-func (b *TimeBuilder) Milliseconds() *RequestAction {
-	b.action.timeout = time.Duration(b.value) * time.Millisecond
-	b.action.unit = "millisecond"
-	return b.action
-}
-
-// Millisecond sets the timeout in milliseconds.
-func (b *TimeBuilder) Millisecond() *RequestAction {
-	return b.Milliseconds()
+// For sets the timeout for the request. The returned DurationBuilder lets the
+// caller pick a unit, for example Request(msg).For(20).Milliseconds().
+func (a *RequestAction) For(value int) *timing.DurationBuilder[RequestAction] {
+	return a.durationBuilder.For(value)
 }
 
 // PerformAs performs the task or the action as the provided actor.
@@ -79,21 +51,7 @@ func (a *RequestAction) String() string {
 	if a.message == nil {
 		return "send a nil request"
 	}
-	return "send a request to " + a.message.Subject() + " for " + a.timeoutAsString()
-}
-
-func (a *RequestAction) timeoutAsString() string {
-	if a.unit == "second" {
-		return pluralOrSingular(int(a.timeout.Seconds()), "second")
-	}
-	return pluralOrSingular(int(a.timeout.Milliseconds()), "millisecond")
-}
-
-func pluralOrSingular(value int, unit string) string {
-	if value != 1 {
-		return fmt.Sprintf("%d %ss", value, unit)
-	}
-	return fmt.Sprintf("%d %s", value, unit)
+	return "send a request to " + a.message.Subject() + " for " + a.durationBuilder.String()
 }
 
 // RequestAction implements the screenplay.Performable interface.

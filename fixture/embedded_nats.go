@@ -7,7 +7,6 @@ import (
 	"github.com/nats-io/nats-server/v2/server"
 	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,7 +31,7 @@ func RunNATSServer(t *testing.T) *server.Server {
 	opts.Port = -1
 	natsServer := natstest.RunServer(&opts)
 	t.Cleanup(natsServer.Shutdown)
-	assert.True(t, natsServer.ReadyForConnections(connectionTimeout))
+	require.True(t, natsServer.ReadyForConnections(connectionTimeout))
 
 	return natsServer
 }

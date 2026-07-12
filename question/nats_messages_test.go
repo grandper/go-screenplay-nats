@@ -7,7 +7,7 @@ import (
 	"github.com/grandper/go-screenplay-nats/action"
 	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/were"
+	"github.com/grandper/go-screenplay-nats/resolution/been"
 	"github.com/grandper/go-screenplay/action/see"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
@@ -49,8 +49,8 @@ func TestNATSMessages(t *testing.T) {
 
 	t.Run("fails to get the NATS messages if the actor does not have the ability CommunicateWithNATS",
 		func(t *testing.T) {
-			bob := screenplay.ActorNamed("bob")
-			assert.Error(t, bob.AttemptsTo(see.The(question.NATSMessages(), were.Received())))
+			bob := screenplay.ActorNamed("Bob")
+			assert.Error(t, bob.AttemptsTo(see.The(question.NATSMessages()).Have(been.Received())))
 		},
 	)
 

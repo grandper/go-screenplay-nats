@@ -7,7 +7,7 @@ import (
 	"github.com/grandper/go-screenplay/screenplay"
 )
 
-// SubscribeToAction is an action to subscribe to aNATS subject.
+// SubscribeToAction is an action to subscribe to a NATS subject.
 type SubscribeToAction struct {
 	subject           string
 	queue             string
@@ -20,12 +20,12 @@ type SubscribeToActionBuilder struct {
 	action *SubscribeToAction
 }
 
-// Message returns to the SubscribeToAction being built.
+// Message returns the SubscribeToAction being built.
 func (b *SubscribeToActionBuilder) Message() *SubscribeToAction {
 	return b.action
 }
 
-// Messages returns to the SubscribeToAction being built.
+// Messages returns the SubscribeToAction being built.
 func (b *SubscribeToActionBuilder) Messages() *SubscribeToAction {
 	return b.action
 }
@@ -47,69 +47,69 @@ func SubscribeToTheSubjectStartingWith(subjectPrefix string) *SubscribeToAction 
 }
 
 // UsingTheQueue sets the queue group for the subscription.
-func (l *SubscribeToAction) UsingTheQueue(queue string) *SubscribeToAction {
-	l.queue = queue
-	return l
+func (a *SubscribeToAction) UsingTheQueue(queue string) *SubscribeToAction {
+	a.queue = queue
+	return a
 }
 
 // Synchronously sets the subscription to be synchronous.
-func (l *SubscribeToAction) Synchronously() *SubscribeToAction {
-	l.synchronous = true
-	return l
+func (a *SubscribeToAction) Synchronously() *SubscribeToAction {
+	a.synchronous = true
+	return a
 }
 
 // Asynchronously sets the subscription to be asynchronous.
-func (l *SubscribeToAction) Asynchronously() *SubscribeToAction {
-	l.synchronous = false
-	return l
+func (a *SubscribeToAction) Asynchronously() *SubscribeToAction {
+	a.synchronous = false
+	return a
 }
 
 // AndUnsubscribeAfter sets the maximum number of wanted messages before unsubscribing.
-func (l *SubscribeToAction) AndUnsubscribeAfter(maxWantedMessages int) *SubscribeToActionBuilder {
-	l.maxWantedMessages = maxWantedMessages
+func (a *SubscribeToAction) AndUnsubscribeAfter(maxWantedMessages int) *SubscribeToActionBuilder {
+	a.maxWantedMessages = maxWantedMessages
 	return &SubscribeToActionBuilder{
-		action: l,
+		action: a,
 	}
 }
 
 // PerformAs performs the task or the action as the provided actor.
-func (l *SubscribeToAction) PerformAs(theActor *screenplay.Actor) error {
+func (a *SubscribeToAction) PerformAs(theActor *screenplay.Actor) error {
 	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
 	if err != nil {
 		return err
 	}
-	if l.subject == "" {
+	if a.subject == "" {
 		return ability.ErrSubjectIsEmpty
 	}
-	if l.queue != "" {
-		if l.synchronous {
-			return communicateWithNATS.SubscribeToQueue(l.subject, l.queue, l.maxWantedMessages)
+	if a.queue != "" {
+		if a.synchronous {
+			return communicateWithNATS.SubscribeToQueue(a.subject, a.queue, a.maxWantedMessages)
 		}
-		return communicateWithNATS.SubscribeToQueueAsync(l.subject, l.queue, l.maxWantedMessages)
+		return communicateWithNATS.SubscribeToQueueAsync(a.subject, a.queue, a.maxWantedMessages)
 	}
-	if l.synchronous {
-		return communicateWithNATS.SubscribeTo(l.subject, l.maxWantedMessages)
+	if a.synchronous {
+		return communicateWithNATS.SubscribeTo(a.subject, a.maxWantedMessages)
 	}
-	return communicateWithNATS.SubscribeAsyncTo(l.subject, l.maxWantedMessages)
+	return communicateWithNATS.SubscribeAsyncTo(a.subject, a.maxWantedMessages)
 }
 
 // String returns a string representation of the action.
-func (l *SubscribeToAction) String() string {
-	msg := "subscribe to NATS subject " + l.subject
-	if l.synchronous {
+func (a *SubscribeToAction) String() string {
+	msg := "subscribe to NATS subject " + a.subject
+	if a.synchronous {
 		msg += " synchronously"
 	} else {
 		msg += " asynchronously"
 	}
-	if l.queue != "" {
-		msg += " using queue " + l.queue
+	if a.queue != "" {
+		msg += " using queue " + a.queue
 	}
-	if l.maxWantedMessages > 0 {
+	if a.maxWantedMessages > 0 {
 		plural := "s"
-		if l.maxWantedMessages == 1 {
+		if a.maxWantedMessages == 1 {
 			plural = ""
 		}
-		msg += fmt.Sprintf(" and unsubscribe after %d message%s", l.maxWantedMessages, plural)
+		msg += fmt.Sprintf(" and unsubscribe after %d message%s", a.maxWantedMessages, plural)
 	}
 	return msg
 }

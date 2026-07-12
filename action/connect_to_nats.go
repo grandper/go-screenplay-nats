@@ -16,6 +16,7 @@ var (
 	ErrFailedToConnect = errors.New("failed to connect to the NATS server")
 )
 
+// ConnectToNATSAction is an action to connect to a NATS server.
 type ConnectToNATSAction struct {
 	url string
 }
@@ -26,31 +27,31 @@ func ConnectToNATS() *ConnectToNATSAction {
 }
 
 // At sets the URL of the NATS server to connect to.
-func (na *ConnectToNATSAction) At(url string) *ConnectToNATSAction {
-	na.url = url
-	return na
+func (a *ConnectToNATSAction) At(url string) *ConnectToNATSAction {
+	a.url = url
+	return a
 }
 
-// PerformAs performs the connection to the NATS server as the provided actor.
-func (na *ConnectToNATSAction) PerformAs(theActor *screenplay.Actor) error {
+// PerformAs performs the task or the action as the provided actor.
+func (a *ConnectToNATSAction) PerformAs(theActor *screenplay.Actor) error {
 	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
 	if err != nil {
 		return err
 	}
-	if na.url == "" {
+	if a.url == "" {
 		return ErrURLIsEmpty
 	}
-	newAbility := communicateWithNATS.UsingServerAt(na.url)
+	newAbility := communicateWithNATS.UsingServerAt(a.url)
 	if newAbility == nil {
-		return fmt.Errorf("%w at %s", ErrFailedToConnect, na.url)
+		return fmt.Errorf("%w at %s", ErrFailedToConnect, a.url)
 	}
 	theActor.WhoCan(newAbility)
 	return nil
 }
 
 // String returns a string representation of the action.
-func (na *ConnectToNATSAction) String() string {
-	return "Connect to NATS server at " + na.url
+func (a *ConnectToNATSAction) String() string {
+	return "Connect to NATS server at " + a.url
 }
 
 // ConnectToNATSAction implements the screenplay.Performable interface.

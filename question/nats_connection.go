@@ -6,15 +6,15 @@ import (
 )
 
 // NATSConnection asks about the connection to NATS.
-func NATSConnection() screenplay.Question {
-	return &TheNATSConnectionQuestion{}
+func NATSConnection() *NATSConnectionQuestion {
+	return &NATSConnectionQuestion{}
 }
 
-// TheNATSConnectionQuestion asks about the Nats connection.
-type TheNATSConnectionQuestion struct{}
+// NATSConnectionQuestion asks about the NATS connection.
+type NATSConnectionQuestion struct{}
 
 // String describes the question.
-func (q *TheNATSConnectionQuestion) String() string {
+func (q *NATSConnectionQuestion) String() string {
 	return "connection to NATS"
 }
 
@@ -22,7 +22,7 @@ func (q *TheNATSConnectionQuestion) String() string {
 // Each call captures the state at that instant; the returned *Connection
 // is immutable and becomes stale as soon as the underlying connection changes.
 // Always re-ask this question rather than caching the result.
-func (q *TheNATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any, error) {
+func (q *NATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any, error) {
 	theActorCommunicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
 	if err != nil {
 		return nil, err
@@ -34,5 +34,5 @@ func (q *TheNATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any,
 	}, nil
 }
 
-// TheNATSConnectionQuestion implements the screenplay.Question interface.
-var _ screenplay.Question = &TheNATSConnectionQuestion{}
+// NATSConnectionQuestion implements the screenplay.Question interface.
+var _ screenplay.Question = (*NATSConnectionQuestion)(nil)

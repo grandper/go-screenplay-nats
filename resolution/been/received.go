@@ -1,4 +1,4 @@
-package were
+package been
 
 import (
 	"errors"
@@ -8,21 +8,21 @@ import (
 )
 
 var (
-	// ErrInvalidObjectType is returned when the object is not a Connection.
-	ErrInvalidObjectType = errors.New("invalid object type: expect NATS messages")
+	// ErrNotMessages is returned when the object is not NATS messages.
+	ErrNotMessages = errors.New("invalid object type: expect NATS messages")
 )
 
-// Received is a matcher to tell if NATS messages were received.
+// Received is a matcher to tell if NATS messages have been received.
 func Received() *ReceivedResolution {
 	return &ReceivedResolution{}
 }
 
-// ReceivedResolution is a matcher to tell if NATS messages were received.
+// ReceivedResolution is a matcher to tell if NATS messages have been received.
 type ReceivedResolution struct {
 	subject string
 }
 
-// From sets the subject from which messages were received.
+// From sets the subject from which messages have been received.
 func (r *ReceivedResolution) From(subject string) *ReceivedResolution {
 	r.subject = subject
 	return r
@@ -37,7 +37,7 @@ func (r *ReceivedResolution) Resolve() screenplay.Matcher {
 		case nil:
 			return false, nil
 		default:
-			return false, ErrInvalidObjectType
+			return false, ErrNotMessages
 		}
 	}
 }
@@ -54,7 +54,10 @@ func (r *ReceivedResolution) messageReceived(messages []*nats.Msg) bool {
 	return false
 }
 
-// String describe the resolution's expectation.
+// String describes the resolution's expectation.
 func (r *ReceivedResolution) String() string {
-	return "were received"
+	return "been received"
 }
+
+// ReceivedResolution implements the screenplay.Resolution interface.
+var _ screenplay.Resolution = (*ReceivedResolution)(nil)

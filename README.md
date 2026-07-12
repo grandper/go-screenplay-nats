@@ -5,6 +5,11 @@ The `Screenplay` pattern is a design pattern for writing high-quality, maintaina
 
 In this document, we describe how to develop NATS scenarios using the Screenplay pattern and this package.
 
+## Installation
+```sh
+go get github.com/grandper/go-screenplay-nats
+```
+
 ## Ability
 This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability can be instantiated from an existing NATS connection using `Using(nc)`, or directly from a server URL using `UsingServerAt("nats://localhost:4222")`.
 
@@ -13,9 +18,12 @@ First, import the package:
 import (
     "github.com/nats-io/nats.go"
     "github.com/grandper/go-screenplay/screenplay"
+    "github.com/grandper/go-screenplay/action/see"
     "github.com/grandper/go-screenplay-nats/ability"
     "github.com/grandper/go-screenplay-nats/action"
+    "github.com/grandper/go-screenplay-nats/fixture"
     "github.com/grandper/go-screenplay-nats/question"
+    "github.com/grandper/go-screenplay-nats/resolution/been"
 )
 ```
 Then create a connection to the NATS server:
@@ -26,6 +34,10 @@ nc, _ := nats.Connect("nats://localhost:4222", nats.UserInfo("username", "passwo
 Finally, create an actor and give it the `CommunicateWithNATS` ability:
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+```
+Alternatively, let the ability open the connection itself from a server URL:
+```go
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://localhost:4222"))
 ```
 
 > **_NOTE:_** Since the connection is not created by the actor, you are responsible for cleaning up the connection when it is no longer needed.
@@ -104,7 +116,7 @@ message := ability.Message().
     WithHeader("key", "value").
     ToBeRepliedTo("reply-subject")
 ```
-Additional headers can be added with `WithHeaders(nats.Header{...})`.
+The subject can equivalently be set with `From("subject")` instead of `To("subject")`, and additional headers can be added with `WithHeaders(nats.Header{...})`.
 
 The `Publish` action allows an actor to publish a message to a NATS subject. It can be used as follows:
 ```go
@@ -136,16 +148,47 @@ err := actor.AttemptsTo(action.Flush())
 ### NATSConnection
 The `NATSConnection` question allows an actor to retrieve the underlying NATS connection. It can be used as follows:
 ```go
-err := actor.Should(see.The(question.NATSConnection(), was.Closed()))
-err := actor.Should(see.The(question.NATSConnection(), was.Disconnected()))
-err := actor.Should(see.The(question.NATSConnection(), was.Reconnected()))
+err := actor.Should(see.The(question.NATSConnection()).Has(been.Closed()))
+err := actor.Should(see.The(question.NATSConnection()).Has(been.Disconnected()))
+err := actor.Should(see.The(question.NATSConnection()).Has(been.Reconnected()))
 ```
 
 ### NATSMessages
 The `NATSMessages` question allows an actor to retrieve all messages received on a specific NATS subject. It can be used as follows:
 ```go
-err := actor.Should(see.The(question.NATSMessages().From("subject"), were.Received()))
-err := actor.Should(see.The(question.NATSMessages(), were.Received().From("subject")))
+err := actor.Should(see.The(question.NATSMessages().From("subject")).Have(been.Received()))
+err := actor.Should(see.The(question.NATSMessages()).Have(been.Received().From("subject")))
+```
+
+## Testing with an embedded NATS server
+The `fixture` package spins up an in-process NATS server so scenarios can run without an external broker. Both helpers take a `*testing.T` and register their own cleanup, so the server is shut down automatically when the test ends:
+```go
+// Returns a ready-to-use *nats.Conn connected to the embedded server.
+nc := fixture.CreateEmbeddedNATSServer(t)
+
+// Returns the underlying *server.Server if you need to connect several actors
+// or inspect the server directly.
+srv := fixture.RunNATSServer(t)
+```
+
+## Putting it all together
+A complete scenario, from spinning up the embedded server to asserting on received messages:
+```go
+func TestReceivesAPublishedMessage(t *testing.T) {
+    nc := fixture.CreateEmbeddedNATSServer(t)
+    actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+
+    require.NoError(t, actor.AttemptsTo(
+        action.SubscribeTo("greetings"),
+        action.Flush(), // ensure the subscription reaches the server before publishing
+        action.Publish(ability.Message().To("greetings").Containing([]byte("Hello, World!"))),
+        action.ReceiveFrom("greetings"),
+    ))
+
+    require.NoError(t, actor.Should(
+        see.The(question.NATSMessages().From("greetings")).Have(been.Received()),
+    ))
+}
 ```
 
 # References

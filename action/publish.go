@@ -10,7 +10,7 @@ type PublishAction struct {
 	message *ability.NATSMessage
 }
 
-// Publish publishes a message to a NATS.
+// Publish publishes a message to a NATS subject.
 func Publish(message *ability.NATSMessage) *PublishAction {
 	return &PublishAction{
 		message: message,
@@ -18,20 +18,20 @@ func Publish(message *ability.NATSMessage) *PublishAction {
 }
 
 // PerformAs performs the task or the action as the provided actor.
-func (s *PublishAction) PerformAs(theActor *screenplay.Actor) error {
+func (a *PublishAction) PerformAs(theActor *screenplay.Actor) error {
 	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
 	if err != nil {
 		return err
 	}
-	return communicateWithNATS.Publish(s.message)
+	return communicateWithNATS.Publish(a.message)
 }
 
 // String returns a string representation of the action.
-func (s *PublishAction) String() string {
-	if s.message == nil {
+func (a *PublishAction) String() string {
+	if a.message == nil {
 		return "publish a nil message"
 	}
-	return "publish a message to " + s.message.Subject()
+	return "publish a message to " + a.message.Subject()
 }
 
 // PublishAction implements the screenplay.Performable interface.

@@ -1,16 +1,16 @@
-package was
+package been
 
 import (
 	"github.com/grandper/go-screenplay-nats/question"
 	"github.com/grandper/go-screenplay/screenplay"
 )
 
-// Reconnected is a matcher to tell if the connection was reconnected at some point.
+// Reconnected is a matcher to tell if the connection has been reconnected at some point.
 func Reconnected() *ReconnectedResolution {
 	return &ReconnectedResolution{}
 }
 
-// ReconnectedResolution is a matcher to tell if the connection was reconnected at some point.
+// ReconnectedResolution is a matcher to tell if the connection has been reconnected at some point.
 type ReconnectedResolution struct{}
 
 // Resolve creates a matcher to make an assertion.
@@ -22,12 +22,15 @@ func (r *ReconnectedResolution) Resolve() screenplay.Matcher {
 		case nil:
 			return false, nil
 		default:
-			return false, ErrInvalidObjectType
+			return false, ErrNotConnection
 		}
 	}
 }
 
-// String describe the resolution's expectation.
+// String describes the resolution's expectation.
 func (r *ReconnectedResolution) String() string {
-	return "was reconnected"
+	return "been reconnected"
 }
+
+// ReconnectedResolution implements the screenplay.Resolution interface.
+var _ screenplay.Resolution = (*ReconnectedResolution)(nil)

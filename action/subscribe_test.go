@@ -68,6 +68,18 @@ func TestSubscribeTo(t *testing.T) {
 		}, timeout, waitInterval)
 	})
 
+	t.Run("can subscribe to subject using a queue asynchronously", func(t *testing.T) {
+		nc := fixture.CreateEmbeddedNATSServer(t)
+		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+		require.NoError(t, adam.AttemptsTo(action.SubscribeTo(subject).UsingTheQueue(queue).Asynchronously()))
+		assert.Eventually(t, func() bool {
+			return nc.NumSubscriptions() >= 1
+		}, timeout, waitInterval)
+		// Verify the subscription is truly async: NextMsg is illegal on async subscriptions.
+		require.NoError(t, nc.Publish(subject, []byte("hello")))
+		require.ErrorIs(t, adam.AttemptsTo(action.ReceiveFrom(subject)), nats.ErrSyncSubRequired)
+	})
+
 	t.Run("can subscribe to subject asynchronously", func(t *testing.T) {
 		nc := fixture.CreateEmbeddedNATSServer(t)
 		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
