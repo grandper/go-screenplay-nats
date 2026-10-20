@@ -170,7 +170,7 @@ var _ screenplay.Ability = (*CommunicateWithNATSAbility)(nil)
 // with NATS; it is written in PerformAs or AnsweredBy and reads "the ability of
 // the actor to publish":
 //
-//	err := ability.TheAbilityOf(theActor).ToPublish(message)
+//	err := ability.TheAbilityOf(theActor).ToPublish(msg)
 //
 // It never fails. When the actor is nil or does not have the ability, every
 // operation fails with screenplay.ErrActorMissingAbility.
@@ -218,16 +218,16 @@ func (o *Operations) ToConnectTo(url string) error {
 
 // ToPublish publishes the message. When the actor does not have the ability,
 // it fails with screenplay.ErrActorMissingAbility.
-func (o *Operations) ToPublish(message *NATSMessage) error {
+func (o *Operations) ToPublish(msg *nats.Msg) error {
 	nc, err := o.connection()
 	if err != nil {
 		return err
 	}
-	if message == nil {
+	if msg == nil {
 		return ErrMessageIsNil
 	}
 
-	return nc.PublishMsg(message.toNATSMessage())
+	return nc.PublishMsg(msg)
 }
 
 // ToSendTheRequest sends the message as a request and stores the reply under
@@ -235,23 +235,23 @@ func (o *Operations) ToPublish(message *NATSMessage) error {
 // after the timeout, whichever comes first; a timeout is reported with an
 // error wrapping nats.ErrTimeout. When the actor does not have the ability,
 // it fails with screenplay.ErrActorMissingAbility.
-func (o *Operations) ToSendTheRequest(ctx context.Context, message *NATSMessage, timeout time.Duration) error {
+func (o *Operations) ToSendTheRequest(ctx context.Context, msg *nats.Msg, timeout time.Duration) error {
 	nc, err := o.connection()
 	if err != nil {
 		return err
 	}
-	if message == nil {
+	if msg == nil {
 		return ErrMessageIsNil
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	reply, err := nc.RequestMsgWithContext(ctx, message.toNATSMessage())
+	reply, err := nc.RequestMsgWithContext(ctx, msg)
 	if errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf(
 			"no reply to the request to %q within %s: %w: %w",
-			message.Subject(),
+			msg.Subject,
 			timeout,
 			nats.ErrTimeout,
 			err,
@@ -261,7 +261,7 @@ func (o *Operations) ToSendTheRequest(ctx context.Context, message *NATSMessage,
 		return err
 	}
 
-	o.ability.store(message.Subject(), reply)
+	o.ability.store(msg.Subject, reply)
 
 	return nil
 }

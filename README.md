@@ -20,7 +20,13 @@ import (
     "github.com/grandper/go-screenplay/v2/screenplay"
     "github.com/grandper/go-screenplay/v2/action/see"
     "github.com/grandper/go-screenplay-nats/v2/ability"
-    "github.com/grandper/go-screenplay-nats/v2/action"
+    "github.com/grandper/go-screenplay-nats/v2/action/connect"
+    "github.com/grandper/go-screenplay-nats/v2/action/flush"
+    "github.com/grandper/go-screenplay-nats/v2/action/publish"
+    "github.com/grandper/go-screenplay-nats/v2/action/receive"
+    "github.com/grandper/go-screenplay-nats/v2/action/send"
+    "github.com/grandper/go-screenplay-nats/v2/action/subscribe"
+    "github.com/grandper/go-screenplay-nats/v2/action/unsubscribe"
     "github.com/grandper/go-screenplay-nats/v2/fixture"
     "github.com/grandper/go-screenplay-nats/v2/question"
     "github.com/grandper/go-screenplay-nats/v2/resolution/been"
@@ -39,7 +45,7 @@ Alternatively, let the ability open the connection itself from a server URL. The
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://localhost:4222"))
 ```
-An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, until it performs the `ConnectToNATS` action.
+An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, until it performs the `connect.ToTheNATSServerAt` action.
 
 > **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
 
@@ -52,97 +58,105 @@ err := impl.TheAbilityOf(theActor).ToPublish(message)
 You can of course use all the available options when creating the NATS connection, see [NATS Go client](https://github.com/nats-io/nats.go) for more details.
 
 ## Actions
-
-### ConnectToNATS
-The `ConnectToNATS` action allows an actor to connect to a NATS server. It can be used as follows:
+The actions live in packages named after their verb, so that a statement reads as English: `subscribe.To("orders")` reads "subscribe to orders". Every action is narrated word for word as it was written, after the name of the actor:
 ```go
-err := actor.AttemptsTo(action.ConnectToNATS().At("nats://localhost:4222"))
+err := actor.AttemptsTo(subscribe.To("orders"))
+// NATS User attempts to subscribe to "orders"
 ```
-It fails with `action.ErrURLIsEmpty` when no URL is given, with an error wrapping `ability.ErrFailedToConnect` when the server cannot be reached, and with `ability.ErrAlreadyConnected` when the actor already holds a connection.
+Nothing panics when an action is built. A mistake, such as an empty subject, is reported when the actor performs the action, with an error of the `action` package: `action.ErrSubjectIsEmpty`, `action.ErrQueueIsEmpty` or `action.ErrURLIsEmpty`.
 
-### SubscribeTo
-The `SubscribeTo` action allows an actor to subscribe to a NATS subject without providing a message handler. It can be used as follows:
+### connect.ToTheNATSServerAt
+Connects the actor to a NATS server, when its ability was given neither a connection nor a URL:
 ```go
-err := actor.AttemptsTo(action.SubscribeTo("foobar"))
+err := actor.AttemptsTo(connect.ToTheNATSServerAt("nats://localhost:4222"))
+// NATS User attempts to connect to the NATS server at "nats://localhost:4222"
 ```
-An empty subject is reported when the actor performs the action, with `action.ErrSubjectIsEmpty`; so is an empty queue, with `action.ErrQueueIsEmpty`.
+It fails with `action.ErrURLIsEmpty` when the URL is empty, with an error wrapping `ability.ErrFailedToConnect` when the server cannot be reached, and with `ability.ErrAlreadyConnected` when the actor already holds a connection.
 
-You can of course use wildcards to match any token at any level of the subject:
+### subscribe.To
+Subscribes the actor to a subject. Wildcards match any token at one level (`*`) or at every following level (`>`):
 ```go
-err := actor.AttemptsTo(action.SubscribeTo("foo.*.baz"))
-err := actor.AttemptsTo(action.SubscribeTo("foo.bar.*"))
+err := actor.AttemptsTo(subscribe.To("orders"))
+// NATS User attempts to subscribe to "orders"
+err := actor.AttemptsTo(subscribe.To("orders.*.created"))
+err := actor.AttemptsTo(subscribe.To("orders.>"))
 ```
-You can also subscribe to all subjects starting with a given prefix using the `SubscribeToTheSubjectStartingWith` action:
+`subscribe.ToTheSubjectStartingWith` subscribes to every subject starting with a prefix, which is the subject `prefix.>`:
 ```go
-err := actor.AttemptsTo(action.SubscribeToTheSubjectStartingWith("foo"))
+err := actor.AttemptsTo(subscribe.ToTheSubjectStartingWith("orders"))
+// NATS User attempts to subscribe to the subject starting with "orders"
 ```
-This is equivalent to using the `>` wildcard to match any number of tokens at the end of the subject:
+A subscription is synchronous by default: its messages are received one at a time with `receive.TheNextMessageFrom`. An asynchronous subscription stores its messages as they arrive:
 ```go
-err := actor.AttemptsTo(action.SubscribeTo("foo.>"))
+err := actor.AttemptsTo(subscribe.To("orders").Synchronously())
+// NATS User attempts to subscribe to "orders" synchronously
+err := actor.AttemptsTo(subscribe.To("orders").Asynchronously())
+// NATS User attempts to subscribe to "orders" asynchronously
 ```
+A queue group distributes the messages of a subject among its subscribers, each message going to one of them:
+```go
+err := actor.AttemptsTo(subscribe.To("orders").UsingTheQueue("workers"))
+// NATS User attempts to subscribe to "orders" using the queue "workers"
+```
+The subscription can end by itself after a number of messages:
+```go
+err := actor.AttemptsTo(subscribe.To("orders").AndUnsubscribeAfter(10).Messages())
+// NATS User attempts to subscribe to "orders" and unsubscribe after 10 messages
+err := actor.AttemptsTo(subscribe.To("orders").AndUnsubscribeAfter(1).Message())
+// NATS User attempts to subscribe to "orders" and unsubscribe after 1 message
+```
+Subscribing twice to the same subject fails with `ability.ErrSubscriptionAlreadyExists`.
 
-You can also use queue groups to distribute messages among multiple subscribers. To do so, use the `UsingTheQueue` action:
+### unsubscribe.From
+Unsubscribes the actor from a subject it subscribed to:
 ```go
-err := actor.AttemptsTo(action.SubscribeTo("subject").UsingTheQueue("queue-group"))
+err := actor.AttemptsTo(unsubscribe.From("orders"))
+// NATS User attempts to unsubscribe from "orders"
 ```
+It fails with an error wrapping `ability.ErrNoSubscriptionFound` when the actor did not subscribe to the subject.
 
-You can subscribe to messages synchronously or asynchronously. By default, the subscription is synchronous, meaning that the actor will block until a message is received. To subscribe asynchronously, use the `Asynchronously` option:
+### publish.TheMessage
+Publishes a message to the subject given with `To`. The payload (`Containing`), the headers (`WithTheHeader`, `WithTheHeaders`) and the subject the message is to be replied to (`ToBeRepliedTo`) are optional, and narrated in the order they are written:
 ```go
-err := actor.AttemptsTo(action.SubscribeTo("foobar").Synchronously())
-err := actor.AttemptsTo(action.SubscribeTo("foobar").Asynchronously())
-```
-
-You can also automatically unsubscribe after receiving a certain number of messages using the `AndUnsubscribeAfter` option:
-```go
-err := actor.AttemptsTo(action.SubscribeTo("foobar").AndUnsubscribeAfter(10).Messages())
-```
-
-### UnsubscribeFrom
-The `UnsubscribeFrom` action allows an actor to unsubscribe from a NATS subject. It can be used as follows:
-```go
-err := actor.AttemptsTo(action.UnsubscribeFrom("foobar"))
-```
-
-### Publish
-Messages are composed of:
-- A subject.
-- A payload in the form of a byte array.
-- Any number of header fields.
-- An optional 'reply' address field.
-
-A message is built with `ability.Message()`:
-```go
-message := ability.Message().
-    To("subject").
+err := actor.AttemptsTo(publish.TheMessage().To("orders"))
+// NATS User attempts to publish the message to "orders"
+err := actor.AttemptsTo(publish.TheMessage().To("orders").Containing([]byte("Hello, World!")))
+// NATS User attempts to publish the message to "orders" containing "Hello, World!"
+err := actor.AttemptsTo(publish.TheMessage().
+    To("orders").
     Containing([]byte("Hello, World!")).
-    WithHeader("key", "value").
-    ToBeRepliedTo("reply-subject")
+    WithTheHeader("Key", "value").
+    WithTheHeaders(nats.Header{"Other": []string{"1", "2"}}).
+    ToBeRepliedTo("inbox"))
+// NATS User attempts to publish the message to "orders" containing "Hello, World!" with the header "Key" = "value" with the headers "Other" = "1", "Other" = "2" to be replied to "inbox"
 ```
-The subject can equivalently be set with `From("subject")` instead of `To("subject")`, and additional headers can be added with `WithHeaders(nats.Header{...})`.
+`WithTheHeaders` narrates its headers sorted by key.
 
-The `Publish` action allows an actor to publish a message to a NATS subject. It can be used as follows:
+### send.TheRequest
+Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessages().From(subject)` finds it. The payload and the headers are given as for `publish.TheMessage`. The actor waits at most five seconds, unless `TimingOutAfter` is written:
 ```go
-err := actor.AttemptsTo(action.Publish(message))
+err := actor.AttemptsTo(send.TheRequest().To("orders").Containing([]byte("ping")))
+// NATS User attempts to send the request to "orders" containing "ping"
+err := actor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(2).Seconds())
+// NATS User attempts to send the request to "orders" timing out after 2 seconds
+err := actor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(500).Milliseconds())
+// NATS User attempts to send the request to "orders" timing out after 500 milliseconds
 ```
+A request nobody answers fails with `nats.ErrNoResponders`; a reply that does not come in time fails with an error wrapping `nats.ErrTimeout`. A deadline or a cancellation set on the actor's context stops the request as well.
 
-### Request
-The `Request` action allows an actor to publish a message and wait for a reply. The response is stored and can later be retrieved with the `NATSMessages` question. By default the request times out after 5 seconds; use `For` to change the timeout:
+### receive.TheNextMessageFrom
+Receives the next message of a synchronous subscription and stores it, where `question.NATSMessages().From(subject)` finds it. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`):
 ```go
-err := actor.AttemptsTo(action.Request(message))
-err := actor.AttemptsTo(action.Request(message).For(2).Seconds())
-err := actor.AttemptsTo(action.Request(message).For(500).Milliseconds())
+err := actor.AttemptsTo(receive.TheNextMessageFrom("orders"))
+// NATS User attempts to receive the next message from "orders"
 ```
+It fails with an error wrapping `ability.ErrNoSubscriptionFound` when the actor did not subscribe to the subject, and with `nats.ErrSyncSubRequired` when the subscription is asynchronous.
 
-### ReceiveFrom
-The `ReceiveFrom` action makes an actor receive the next message from a subject it has subscribed to synchronously. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`). The received message is stored and can later be retrieved with the `NATSMessages` question. It can be used as follows:
+### flush.TheNATSConnection
+Flushes the buffered publish operations of the NATS connection: the actor waits until the server has received everything it published or subscribed to so far. It is the way to make sure a subscription is in place before another actor publishes:
 ```go
-err := actor.AttemptsTo(action.ReceiveFrom("subject"))
-```
-
-### Flush
-The `Flush` action allows an actor to force a flush of the buffered publish operations on the NATS connection. It can be used as follows:
-```go
-err := actor.AttemptsTo(action.Flush())
+err := actor.AttemptsTo(flush.TheNATSConnection())
+// NATS User attempts to flush the NATS connection
 ```
 
 ## Questions
@@ -181,10 +195,10 @@ func TestReceivesAPublishedMessage(t *testing.T) {
     actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
 
     require.NoError(t, actor.AttemptsTo(
-        action.SubscribeTo("greetings"),
-        action.Flush(), // ensure the subscription reaches the server before publishing
-        action.Publish(ability.Message().To("greetings").Containing([]byte("Hello, World!"))),
-        action.ReceiveFrom("greetings"),
+        subscribe.To("greetings"),
+        flush.TheNATSConnection(), // ensure the subscription reaches the server before publishing
+        publish.TheMessage().To("greetings").Containing([]byte("Hello, World!")),
+        receive.TheNextMessageFrom("greetings"),
     ))
 
     require.NoError(t, actor.Should(

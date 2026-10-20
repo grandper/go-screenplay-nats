@@ -9,7 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
-	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/action/publish"
+	"github.com/grandper/go-screenplay-nats/v2/action/receive"
+	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 	"github.com/grandper/go-screenplay-nats/v2/question"
 	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
@@ -24,13 +26,13 @@ func TestNATSMessages(t *testing.T) {
 	content2 := []byte("Hello, NATS again!")
 
 	t.Run("returns all messages", func(t *testing.T) {
-		require.NoError(t, adam.AttemptsTo(action.SubscribeTo(subject1)))
-		require.NoError(t, adam.AttemptsTo(action.SubscribeTo(subject2)))
+		require.NoError(t, adam.AttemptsTo(subscribe.To(subject1)))
+		require.NoError(t, adam.AttemptsTo(subscribe.To(subject2)))
 
-		require.NoError(t, adam.AttemptsTo(action.Publish(ability.Message().To(subject1).Containing(content1))))
-		require.NoError(t, adam.AttemptsTo(action.ReceiveFrom(subject1)))
-		require.NoError(t, adam.AttemptsTo(action.Publish(ability.Message().To(subject2).Containing(content2))))
-		require.NoError(t, adam.AttemptsTo(action.ReceiveFrom(subject2)))
+		require.NoError(t, adam.AttemptsTo(publish.TheMessage().To(subject1).Containing(content1)))
+		require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject1)))
+		require.NoError(t, adam.AttemptsTo(publish.TheMessage().To(subject2).Containing(content2)))
+		require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject2)))
 
 		t.Run("returns all messages when no subject is set", func(t *testing.T) {
 			answer, err := adam.AsksFor(question.NATSMessages())

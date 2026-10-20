@@ -171,7 +171,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
-			require.NoError(t, theAbility.ToPublish(ability.Message().To(subject).Containing(message)))
+			require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 
 			msg, err := sub.NextMsg(testTimeout)
 			require.NoError(t, err)
@@ -186,11 +186,11 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			require.ErrorIs(t, theAbility.ToPublish(ability.Message().Containing(message)), nats.ErrBadSubject)
+			require.ErrorIs(t, theAbility.ToPublish(&nats.Msg{Data: message}), nats.ErrBadSubject)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			err := abilityWithoutConnection().ToPublish(ability.Message().To(subject))
+			err := abilityWithoutConnection().ToPublish(&nats.Msg{Subject: subject})
 			require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 		})
 	})
@@ -198,7 +198,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("flushes the connection", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			require.NoError(t, theAbility.ToPublish(ability.Message().To(subject).Containing(message)))
+			require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 			require.NoError(t, theAbility.ToFlush())
 		})
 
@@ -216,7 +216,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, sub.Unsubscribe()) }()
 
-			request := ability.Message().To(subject).Containing(message)
+			request := &nats.Msg{Subject: subject, Data: message}
 			require.NoError(t, theAbility.ToSendTheRequest(ctx, request, requestTimeout))
 
 			replies, err := theAbility.ToRetrieveMessagesFrom(subject)
@@ -232,18 +232,18 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			err := theAbility.ToSendTheRequest(ctx, ability.Message().Containing(message), requestTimeout)
+			err := theAbility.ToSendTheRequest(ctx, &nats.Msg{Data: message}, requestTimeout)
 			require.ErrorIs(t, err, nats.ErrBadSubject)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			err := abilityWithoutConnection().ToSendTheRequest(ctx, ability.Message().To(subject), requestTimeout)
+			err := abilityWithoutConnection().ToSendTheRequest(ctx, &nats.Msg{Subject: subject}, requestTimeout)
 			require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 		})
 
 		t.Run("fails when no responder is set", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			err := theAbility.ToSendTheRequest(ctx, ability.Message().To(subject), requestTimeout)
+			err := theAbility.ToSendTheRequest(ctx, &nats.Msg{Subject: subject}, requestTimeout)
 			require.ErrorIs(t, err, nats.ErrNoResponders)
 		})
 
@@ -253,7 +253,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, sub.Unsubscribe()) }()
 
-			err = theAbility.ToSendTheRequest(ctx, ability.Message().To(subject), 20*time.Millisecond)
+			err = theAbility.ToSendTheRequest(ctx, &nats.Msg{Subject: subject}, 20*time.Millisecond)
 			require.ErrorIs(t, err, nats.ErrTimeout)
 			replies, err := theAbility.ToRetrieveMessagesFrom(subject)
 			require.NoError(t, err)
@@ -268,7 +268,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 			cancelled, cancel := context.WithCancel(ctx)
 			cancel()
-			err = theAbility.ToSendTheRequest(cancelled, ability.Message().To(subject), requestTimeout)
+			err = theAbility.ToSendTheRequest(cancelled, &nats.Msg{Subject: subject}, requestTimeout)
 			require.ErrorIs(t, err, context.Canceled)
 		})
 	})
@@ -285,7 +285,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 		t.Run("stores the messages of an asynchronous subscription", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
 			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject, Asynchronous: true}))
-			require.NoError(t, theAbility.ToPublish(ability.Message().To(subject).Containing(message)))
+			require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 
 			assertEventually(t, func() bool {
 				messages, err := theAbility.ToRetrieveMessagesFrom(subject)
@@ -449,10 +449,10 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("fails every operation when the actor does not have the ability", func(t *testing.T) {
 		theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam"))
 		require.ErrorIs(t, theAbility.ToConnectTo("nats://localhost:4222"), screenplay.ErrActorMissingAbility)
-		require.ErrorIs(t, theAbility.ToPublish(ability.Message().To(subject)), screenplay.ErrActorMissingAbility)
+		require.ErrorIs(t, theAbility.ToPublish(&nats.Msg{Subject: subject}), screenplay.ErrActorMissingAbility)
 		require.ErrorIs(
 			t,
-			theAbility.ToSendTheRequest(ctx, ability.Message().To(subject), requestTimeout),
+			theAbility.ToSendTheRequest(ctx, &nats.Msg{Subject: subject}, requestTimeout),
 			screenplay.ErrActorMissingAbility,
 		)
 		require.ErrorIs(t, theAbility.ToFlush(), screenplay.ErrActorMissingAbility)
@@ -505,7 +505,7 @@ func testSubscriptions(ctx context.Context, t *testing.T, message []byte) {
 				require.NoError(t, theAbility.ToSubscribe(subscription))
 
 				for range 3 {
-					require.NoError(t, theAbility.ToPublish(ability.Message().To(subject).Containing(message)))
+					require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 				}
 				if !tc.subscription.Asynchronous {
 					require.NoError(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
@@ -561,7 +561,7 @@ func testConcurrentUse(t *testing.T, message []byte) {
 	var wg sync.WaitGroup
 	for i := range workers {
 		wg.Go(func() {
-			errs <- theAbility.ToPublish(ability.Message().To(subject).Containing(message))
+			errs <- theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message})
 			_, err := theAbility.ToRetrieveMessages()
 			errs <- err
 			_, err = theAbility.ToRetrieveTheConnection()
