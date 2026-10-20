@@ -4,8 +4,8 @@
 //	connect.ToTheNATSServerAt("nats://localhost:4222")   action/connect
 //	subscribe.To("orders")                               action/subscribe
 //	unsubscribe.From("orders")                           action/unsubscribe
-//	publish.TheMessage().To("orders")                    action/publish
-//	send.TheRequest().To("orders")                       action/send
+//	publish.TheMessage("Hello").To("orders")                    action/publish
+//	send.TheRequest("ping").To("orders")                       action/send
 //	receive.TheNextMessageFrom("orders")                 action/receive
 //	flush.TheNATSConnection()                            action/flush
 //
@@ -13,7 +13,7 @@
 //
 //	err := anActor.AttemptsTo(
 //		subscribe.To("orders"),
-//		publish.TheMessage().To("orders").Containing([]byte("Hello")),
+//		publish.TheMessage("Hello").To("orders"),
 //		receive.TheNextMessageFrom("orders"),
 //	)
 package action

@@ -38,11 +38,11 @@ func TestNATSMessages(t *testing.T) {
 		require.NoError(t, adam.AttemptsTo(
 			subscribe.To(orders),
 			subscribe.To(invoices),
-			publish.TheMessage().To(orders).Containing([]byte("1")),
+			publish.TheMessage("1").To(orders),
 			receive.TheNextMessageFrom(orders),
-			publish.TheMessage().To(invoices).Containing([]byte("2")),
+			publish.TheMessage("2").To(invoices),
 			receive.TheNextMessageFrom(invoices),
-			publish.TheMessage().To(orders).Containing([]byte("3")),
+			publish.TheMessage("3").To(orders),
 			receive.TheNextMessageFrom(orders),
 		))
 

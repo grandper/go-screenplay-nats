@@ -2,109 +2,118 @@ package message
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/nats-io/nats.go"
 
+	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/internal/verdict"
 )
 
-// Builder builds the message of an action of type T through chain methods
-// that each return the action, so that the chain keeps flowing. The action
-// embeds the builder and gives it a pointer to itself.
-type Builder[T any] struct {
-	action  *T
+// Builder builds the message of a publish or send action. The action holds
+// one and delegates its chain methods to it, so that the message is built
+// and narrated the same way by both actions.
+type Builder struct {
 	subject string
 	data    []byte
 	header  nats.Header
 	reply   string
 	parts   []string
+	err     error // why the action cannot be performed, when it was built wrongly
 }
 
-// NewBuilder creates the builder of the message of the action.
-func NewBuilder[T any](action *T) *Builder[T] {
-	return &Builder[T]{action: action}
+// NewBuilder creates the builder of a message with the payload.
+func NewBuilder(data []byte) *Builder {
+	return &Builder{data: data}
 }
 
 // To sets the subject the message is published to; it reads "to orders".
-func (b *Builder[T]) To(subject string) *T {
+func (b *Builder) To(subject string) {
 	b.subject = subject
 	b.parts = append(b.parts, "to "+verdict.Describe(subject))
-
-	return b.action
-}
-
-// Containing sets the payload of the message; it reads "containing Hello".
-func (b *Builder[T]) Containing(data []byte) *T {
-	b.data = data
-	b.parts = append(b.parts, "containing "+verdict.Describe(data))
-
-	return b.action
 }
 
 // WithTheHeader adds a header to the message; it reads "with the header
-// Key = value".
-func (b *Builder[T]) WithTheHeader(key, value string) *T {
-	b.addHeader(key, value)
+// Key = value". An empty key is reported when the action is performed.
+func (b *Builder) WithTheHeader(key, value string) {
 	b.parts = append(b.parts, "with the header "+describeHeader(key, value))
+	if key == "" {
+		b.fail(fmt.Errorf("%w: a key cannot be empty", action.ErrInvalidHeaders))
 
-	return b.action
+		return
+	}
+	b.addHeader(key, value)
 }
 
-// WithTheHeaders adds headers to the message; it reads "with the headers
-// A = 1, B = 2", the headers sorted by key then by value.
-func (b *Builder[T]) WithTheHeaders(headers nats.Header) *T {
-	described := make([]string, 0, len(headers))
-	for _, key := range slices.Sorted(maps(headers)) {
-		for _, value := range headers[key] {
-			b.addHeader(key, value)
-			described = append(described, describeHeader(key, value))
+// WithTheHeaders adds headers to the message, written as key, value, key,
+// value; it reads "with the headers A = 1, B = 2", in the order they were
+// written. No header, or a key without its value, is reported when the
+// action is performed.
+func (b *Builder) WithTheHeaders(args ...string) {
+	switch {
+	case len(args) == 0:
+		b.parts = append(b.parts, "with the headers")
+		b.fail(fmt.Errorf("%w: WithTheHeaders should receive at least one key and its value", action.ErrInvalidHeaders))
+
+		return
+	case len(args)%2 != 0:
+		b.parts = append(b.parts, "with the headers "+strings.Join(args, ", "))
+		b.fail(fmt.Errorf("%w: WithTheHeaders should receive a list of key-value pairs", action.ErrInvalidHeaders))
+
+		return
+	}
+
+	described := make([]string, 0, len(args)/2) //nolint:mnd // two arguments make one header
+	for i := 0; i < len(args); i += 2 {
+		if args[i] == "" {
+			b.fail(fmt.Errorf("%w: a key cannot be empty", action.ErrInvalidHeaders))
 		}
+		b.addHeader(args[i], args[i+1])
+		described = append(described, describeHeader(args[i], args[i+1]))
 	}
 	b.parts = append(b.parts, "with the headers "+strings.Join(described, ", "))
-
-	return b.action
 }
 
-// maps returns the keys of the headers.
-func maps(headers nats.Header) func(yield func(string) bool) {
-	return func(yield func(string) bool) {
-		for key := range headers {
-			if !yield(key) {
-				return
-			}
-		}
-	}
-}
-
-// ToBeRepliedTo sets the subject the message is to be replied to; it reads
-// "to be replied to inbox".
-func (b *Builder[T]) ToBeRepliedTo(reply string) *T {
+// ExpectingAReplyOn sets the subject the message is to be replied on; it
+// reads "expecting a reply on inbox".
+func (b *Builder) ExpectingAReplyOn(reply string) {
 	b.reply = reply
-	b.parts = append(b.parts, "to be replied to "+verdict.Describe(reply))
-
-	return b.action
+	b.parts = append(b.parts, "expecting a reply on "+verdict.Describe(reply))
 }
 
-func (b *Builder[T]) addHeader(key, value string) {
+func (b *Builder) addHeader(key, value string) {
 	if b.header == nil {
 		b.header = nats.Header{}
 	}
 	b.header.Add(key, value)
 }
 
+// fail keeps the first mistake made while building the message.
+func (b *Builder) fail(err error) {
+	if b.err == nil {
+		b.err = err
+	}
+}
+
 func describeHeader(key, value string) string {
 	return fmt.Sprintf("%s = %s", verdict.Describe(key), verdict.Describe(value))
 }
 
-// Subject returns the subject of the message.
-func (b *Builder[T]) Subject() string {
-	return b.subject
+// Err returns why the message cannot be sent: a mistake in the headers, or
+// a missing subject.
+func (b *Builder) Err() error {
+	if b.err != nil {
+		return b.err
+	}
+	if b.subject == "" {
+		return action.ErrSubjectIsEmpty
+	}
+
+	return nil
 }
 
 // Msg returns the message to publish or to send.
-func (b *Builder[T]) Msg() *nats.Msg {
+func (b *Builder) Msg() *nats.Msg {
 	return &nats.Msg{
 		Subject: b.subject,
 		Reply:   b.reply,
@@ -114,8 +123,8 @@ func (b *Builder[T]) Msg() *nats.Msg {
 }
 
 // Describe returns the chain as it was written, after the name of the
-// action: `to "orders" containing "Hello"`. It is empty when nothing was
-// written.
-func (b *Builder[T]) Describe() string {
+// action: `to "orders" with the header "Key" = "value"`. It is empty when
+// nothing was written.
+func (b *Builder) Describe() string {
 	return strings.Join(b.parts, " ")
 }

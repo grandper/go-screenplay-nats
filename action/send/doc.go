@@ -1,5 +1,8 @@
-// Package send holds the action that sends a request and waits for its reply:
+// Package send holds the actions that send a request and wait for its reply:
 //
-//	err := anActor.AttemptsTo(send.TheRequest().To("orders").Containing([]byte("ping")))
-//	err := anActor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(2).Seconds())
+//	err := anActor.AttemptsTo(send.TheRequest("ping").To("orders"))
+//	err := anActor.AttemptsTo(send.TheBinaryRequest(data).To("orders"))
+//	err := anActor.AttemptsTo(send.AnEmptyRequest().To("orders").TimingOutAfter(2).Seconds())
+//
+// A request carries headers with WithTheHeader and WithTheHeaders.
 package send

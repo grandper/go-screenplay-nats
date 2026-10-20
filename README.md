@@ -21,12 +21,12 @@ The symbols shown below live in these packages:
 | Package | Import path | Provides |
 |---------|-------------|----------|
 | `ability` | `github.com/grandper/go-screenplay-nats/v2/ability` | `CommunicateWithNATS`, `Connection`, `ErrNATSConnectionNotSet`, `ErrFailedToConnect`, `ErrAlreadyConnected`, `ErrSubscriptionAlreadyExists`, `ErrNoSubscriptionFound` |
-| `action` | `github.com/grandper/go-screenplay-nats/v2/action` | `ErrURLIsEmpty`, `ErrSubjectIsEmpty`, `ErrQueueIsEmpty` |
+| `action` | `github.com/grandper/go-screenplay-nats/v2/action` | `ErrURLIsEmpty`, `ErrSubjectIsEmpty`, `ErrQueueIsEmpty`, `ErrInvalidHeaders` |
 | `connect` | `github.com/grandper/go-screenplay-nats/v2/action/connect` | `ToTheNATSServerAt` |
 | `subscribe` | `github.com/grandper/go-screenplay-nats/v2/action/subscribe` | `To`, `ToTheSubjectsStartingWith` |
 | `unsubscribe` | `github.com/grandper/go-screenplay-nats/v2/action/unsubscribe` | `From` |
-| `publish` | `github.com/grandper/go-screenplay-nats/v2/action/publish` | `TheMessage` |
-| `send` | `github.com/grandper/go-screenplay-nats/v2/action/send` | `TheRequest` |
+| `publish` | `github.com/grandper/go-screenplay-nats/v2/action/publish` | `TheMessage`, `TheBinaryMessage`, `AnEmptyMessage` |
+| `send` | `github.com/grandper/go-screenplay-nats/v2/action/send` | `TheRequest`, `TheBinaryRequest`, `AnEmptyRequest` |
 | `receive` | `github.com/grandper/go-screenplay-nats/v2/action/receive` | `TheNextMessageFrom` |
 | `flush` | `github.com/grandper/go-screenplay-nats/v2/action/flush` | `TheNATSConnection` |
 | `question` | `github.com/grandper/go-screenplay-nats/v2/question` | `NATSConnection`, `NATSMessages`, `NATSMessagesFrom` |
@@ -142,31 +142,41 @@ err := actor.AttemptsTo(unsubscribe.From("orders"))
 It fails with an error wrapping `ability.ErrNoSubscriptionFound` when the actor did not subscribe to the subject.
 
 ### publish.TheMessage
-Publishes a message to the subject given with `To`. The payload (`Containing`), the headers (`WithTheHeader`, `WithTheHeaders`) and the subject the message is to be replied to (`ToBeRepliedTo`) are optional, and narrated in the order they are written:
+Publishes a message to the subject given with `To`. The message holds a text (`TheMessage`), bytes (`TheBinaryMessage`) or nothing (`AnEmptyMessage`):
 ```go
-err := actor.AttemptsTo(publish.TheMessage().To("orders"))
-// NATS User attempts to publish the message to "orders"
-err := actor.AttemptsTo(publish.TheMessage().To("orders").Containing([]byte("Hello, World!")))
-// NATS User attempts to publish the message to "orders" containing "Hello, World!"
-err := actor.AttemptsTo(publish.TheMessage().
-    To("orders").
-    Containing([]byte("Hello, World!")).
-    WithTheHeader("Key", "value").
-    WithTheHeaders(nats.Header{"Other": []string{"1", "2"}}).
-    ToBeRepliedTo("inbox"))
-// NATS User attempts to publish the message to "orders" containing "Hello, World!" with the header "Key" = "value" with the headers "Other" = "1", "Other" = "2" to be replied to "inbox"
+err := actor.AttemptsTo(publish.TheMessage("Hello, World!").To("orders"))
+// NATS User attempts to publish the message "Hello, World!" to "orders"
+err := actor.AttemptsTo(publish.TheBinaryMessage([]byte{0x00, 0x01}).To("orders"))
+// NATS User attempts to publish the binary message "\x00\x01" to "orders"
+err := actor.AttemptsTo(publish.AnEmptyMessage().To("orders"))
+// NATS User attempts to publish an empty message to "orders"
 ```
-`WithTheHeaders` narrates its headers sorted by key.
+The headers (`WithTheHeader`, `WithTheHeaders`, written as `key, value, key, value, ...`) and the subject a reply is expected on (`ExpectingAReplyOn`) are optional, and narrated in the order they are written:
+```go
+err := actor.AttemptsTo(publish.TheMessage("Hello, World!").
+    To("orders").
+    WithTheHeader("Key", "value").
+    WithTheHeaders("Other", "1", "Other", "2").
+    ExpectingAReplyOn("inbox"))
+// NATS User attempts to publish the message "Hello, World!" to "orders" with the header "Key" = "value" with the headers "Other" = "1", "Other" = "2" expecting a reply on "inbox"
+```
+Nothing panics when the headers are written wrongly. An empty key, no header at all, or a key without its value is reported when the actor performs the action, with an error wrapping `action.ErrInvalidHeaders`:
+```go
+err := actor.AttemptsTo(publish.TheMessage("Hello, World!").To("orders").WithTheHeaders("Key"))
+// invalid headers: WithTheHeaders should receive a list of key-value pairs
+```
 
 ### send.TheRequest
-Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessagesFrom(subject)` finds it. The payload and the headers are given as for `publish.TheMessage`. The actor waits at most five seconds, unless `TimingOutAfter` is written:
+Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessagesFrom(subject)` finds it. The request holds a text (`TheRequest`), bytes (`TheBinaryRequest`) or nothing (`AnEmptyRequest`), and carries headers as a published message does. The actor waits at most five seconds, unless `TimingOutAfter` is written:
 ```go
-err := actor.AttemptsTo(send.TheRequest().To("orders").Containing([]byte("ping")))
-// NATS User attempts to send the request to "orders" containing "ping"
-err := actor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(2).Seconds())
-// NATS User attempts to send the request to "orders" timing out after 2 seconds
-err := actor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(500).Milliseconds())
-// NATS User attempts to send the request to "orders" timing out after 500 milliseconds
+err := actor.AttemptsTo(send.TheRequest("ping").To("orders"))
+// NATS User attempts to send the request "ping" to "orders"
+err := actor.AttemptsTo(send.TheBinaryRequest([]byte{0x00, 0x01}).To("orders"))
+// NATS User attempts to send the binary request "\x00\x01" to "orders"
+err := actor.AttemptsTo(send.AnEmptyRequest().To("orders").TimingOutAfter(2).Seconds())
+// NATS User attempts to send an empty request to "orders" timing out after 2 seconds
+err := actor.AttemptsTo(send.TheRequest("ping").To("orders").WithTheHeader("Key", "value").TimingOutAfter(500).Milliseconds())
+// NATS User attempts to send the request "ping" to "orders" with the header "Key" = "value" timing out after 500 milliseconds
 ```
 A request nobody answers fails with `nats.ErrNoResponders`; a reply that does not come in time fails with an error wrapping `nats.ErrTimeout`. A deadline or a cancellation set on the actor's context stops the request as well.
 
@@ -244,7 +254,7 @@ Version 2 follows go-screenplay v2 and its guide for writing an extension: a tes
 1. the module became `github.com/grandper/go-screenplay-nats/v2`;
 2. the dependency became go-screenplay v2: questions and resolutions are typed, the verb is `ShouldHave`;
 3. the operations of the ability moved to `internal/ability`, behind `TheAbilityOf(actor)`;
-4. the actions moved to packages named after their verb, and the message is built on the publish and send actions;
+4. the actions moved to packages named after their verb, and the message is built on the publish and send actions, whose constructors take the payload;
 5. the questions return `screenplay.Question[T]`, with fake connections in `question/fixture`;
 6. the resolutions are built with `resolution.FromFunc` and closed by a verb.
 
@@ -252,13 +262,13 @@ Version 2 follows go-screenplay v2 and its guide for writing an extension: a tes
 |----|----|
 | `ability.CommunicateWithNATS().UsingTheConnection(nc)` | unchanged |
 | `ability.CommunicateWithNATS().UsingTheServerAt(url)` | unchanged; the connection is opened by the first action |
-| `ability.Message().To(s).Containing(d).WithHeader(k, v)` | the chain of `publish.TheMessage()` and `send.TheRequest()`, with `WithTheHeader(k, v)` |
+| `ability.Message().To(s).Containing(d).WithHeader(k, v).WithHeaders(h).ToBeRepliedTo(r)` | `publish.TheMessage(text).To(s).WithTheHeader(k, v).WithTheHeaders(k, v, ...).ExpectingAReplyOn(r)`; `TheBinaryMessage(bytes)` and `AnEmptyMessage()` for the other payloads |
 | `action.ConnectToNATS().At(url)` | `connect.ToTheNATSServerAt(url)` |
 | `action.SubscribeTo(s)` and its chain | `subscribe.To(s)`; `UsingTheQueue(q)` became `InTheQueueGroup(q)` |
 | `action.SubscribeToTheSubjectStartingWith(p)` | `subscribe.ToTheSubjectsStartingWith(p)` |
 | `action.UnsubscribeFrom(s)` | `unsubscribe.From(s)` |
-| `action.Publish(message)` | `publish.TheMessage().To(s).Containing(d)` |
-| `action.Request(message).For(n).Seconds()` | `send.TheRequest().To(s).Containing(d).TimingOutAfter(n).Seconds()` |
+| `action.Publish(message)` | `publish.TheMessage(text).To(s)` |
+| `action.Request(message).For(n).Seconds()` | `send.TheRequest(text).To(s).TimingOutAfter(n).Seconds()`; `TheBinaryRequest(bytes)` and `AnEmptyRequest()` for the other payloads |
 | `action.ReceiveFrom(s)` | `receive.TheNextMessageFrom(s)`, waiting at most the actor's timeout |
 | `action.Flush()` | `flush.TheNATSConnection()` |
 | `question.NATSMessages().From(s)` | `question.NATSMessagesFrom(s)` |
@@ -291,7 +301,7 @@ func TestReceivesAPublishedMessage(t *testing.T) {
     require.NoError(t, actor.AttemptsTo(
         subscribe.To("greetings"),
         flush.TheNATSConnection(), // ensure the subscription reaches the server before publishing
-        publish.TheMessage().To("greetings").Containing([]byte("Hello, World!")),
+        publish.TheMessage("Hello, World!").To("greetings"),
         receive.TheNextMessageFrom("greetings"),
     ))
 

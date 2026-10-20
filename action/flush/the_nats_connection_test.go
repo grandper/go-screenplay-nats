@@ -20,7 +20,7 @@ func TestTheNATSConnection(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
-			require.NoError(t, adam.AttemptsTo(publish.TheMessage().To("orders")))
+			require.NoError(t, adam.AttemptsTo(publish.AnEmptyMessage().To("orders")))
 
 			require.NoError(t, adam.AttemptsTo(flush.TheNATSConnection()))
 		})

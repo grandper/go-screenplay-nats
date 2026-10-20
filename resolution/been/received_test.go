@@ -57,7 +57,7 @@ func TestReceived(t *testing.T) {
 		)
 
 		require.NoError(t, adam.AttemptsTo(
-			publish.TheMessage().To("orders").Containing([]byte("Hello")),
+			publish.TheMessage("Hello").To("orders"),
 			receive.TheNextMessageFrom("orders"),
 		))
 		require.NoError(t, adam.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFrom("orders"))))

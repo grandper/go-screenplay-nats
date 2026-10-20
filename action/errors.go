@@ -17,4 +17,10 @@ var (
 	// an empty queue. Nothing panics when the action is built; the mistake is
 	// reported when the actor performs it.
 	ErrQueueIsEmpty = errors.New("the queue must be provided")
+
+	// ErrInvalidHeaders is wrapped by the error WithTheHeader and WithTheHeaders
+	// return when they are given headers they cannot use: an empty key, no header
+	// at all, or a key without its value. Nothing panics when the action is
+	// built; the mistake is reported when the actor performs it.
+	ErrInvalidHeaders = errors.New("invalid headers")
 )
