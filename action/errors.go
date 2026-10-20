@@ -13,7 +13,7 @@ var (
 	// actor performs it.
 	ErrSubjectIsEmpty = errors.New("the subject must be provided")
 
-	// ErrQueueIsEmpty is returned when subscribe.To(...).UsingTheQueue is given
+	// ErrQueueIsEmpty is returned when subscribe.To(...).InTheQueueGroup is given
 	// an empty queue. Nothing panics when the action is built; the mistake is
 	// reported when the actor performs it.
 	ErrQueueIsEmpty = errors.New("the queue must be provided")

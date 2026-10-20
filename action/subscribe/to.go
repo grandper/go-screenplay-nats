@@ -8,16 +8,17 @@ import impl "github.com/grandper/go-screenplay-nats/v2/action/internal/subscribe
 // they arrive. Wildcards are allowed in the subject:
 //
 //	subscribe.To("orders.*.created")
-//	subscribe.To("orders").UsingTheQueue("workers").Asynchronously()
+//	subscribe.To("orders").InTheQueueGroup("workers").Asynchronously()
 //	subscribe.To("orders").AndUnsubscribeAfter(10).Messages()
 func To(subject string) *impl.ToAction {
 	return impl.To(subject)
 }
 
-// ToTheSubjectStartingWith subscribes the actor to every subject starting
-// with the prefix, which is the subject "prefix.>":
+// ToTheSubjectsStartingWith subscribes the actor to every subject starting
+// with the prefix, which is the subject "prefix.>"; it reads "subscribe to
+// the subjects starting with orders":
 //
-//	subscribe.ToTheSubjectStartingWith("orders")
-func ToTheSubjectStartingWith(prefix string) *impl.ToAction {
-	return impl.ToTheSubjectStartingWith(prefix)
+//	subscribe.ToTheSubjectsStartingWith("orders")
+func ToTheSubjectsStartingWith(prefix string) *impl.ToAction {
+	return impl.ToTheSubjectsStartingWith(prefix)
 }

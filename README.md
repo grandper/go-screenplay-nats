@@ -23,7 +23,7 @@ The symbols shown below live in these packages:
 | `ability` | `github.com/grandper/go-screenplay-nats/v2/ability` | `CommunicateWithNATS`, `Connection`, `ErrNATSConnectionNotSet`, `ErrFailedToConnect`, `ErrAlreadyConnected`, `ErrSubscriptionAlreadyExists`, `ErrNoSubscriptionFound` |
 | `action` | `github.com/grandper/go-screenplay-nats/v2/action` | `ErrURLIsEmpty`, `ErrSubjectIsEmpty`, `ErrQueueIsEmpty` |
 | `connect` | `github.com/grandper/go-screenplay-nats/v2/action/connect` | `ToTheNATSServerAt` |
-| `subscribe` | `github.com/grandper/go-screenplay-nats/v2/action/subscribe` | `To`, `ToTheSubjectStartingWith` |
+| `subscribe` | `github.com/grandper/go-screenplay-nats/v2/action/subscribe` | `To`, `ToTheSubjectsStartingWith` |
 | `unsubscribe` | `github.com/grandper/go-screenplay-nats/v2/action/unsubscribe` | `From` |
 | `publish` | `github.com/grandper/go-screenplay-nats/v2/action/publish` | `TheMessage` |
 | `send` | `github.com/grandper/go-screenplay-nats/v2/action/send` | `TheRequest` |
@@ -107,10 +107,10 @@ err := actor.AttemptsTo(subscribe.To("orders"))
 err := actor.AttemptsTo(subscribe.To("orders.*.created"))
 err := actor.AttemptsTo(subscribe.To("orders.>"))
 ```
-`subscribe.ToTheSubjectStartingWith` subscribes to every subject starting with a prefix, which is the subject `prefix.>`:
+`subscribe.ToTheSubjectsStartingWith` subscribes to every subject starting with a prefix, which is the subject `prefix.>`:
 ```go
-err := actor.AttemptsTo(subscribe.ToTheSubjectStartingWith("orders"))
-// NATS User attempts to subscribe to the subject starting with "orders"
+err := actor.AttemptsTo(subscribe.ToTheSubjectsStartingWith("orders"))
+// NATS User attempts to subscribe to the subjects starting with "orders"
 ```
 A subscription is synchronous by default: its messages are received one at a time with `receive.TheNextMessageFrom`. An asynchronous subscription stores its messages as they arrive:
 ```go
@@ -121,8 +121,8 @@ err := actor.AttemptsTo(subscribe.To("orders").Asynchronously())
 ```
 A queue group distributes the messages of a subject among its subscribers, each message going to one of them:
 ```go
-err := actor.AttemptsTo(subscribe.To("orders").UsingTheQueue("workers"))
-// NATS User attempts to subscribe to "orders" using the queue "workers"
+err := actor.AttemptsTo(subscribe.To("orders").InTheQueueGroup("workers"))
+// NATS User attempts to subscribe to "orders" in the queue group "workers"
 ```
 The subscription can end by itself after a number of messages:
 ```go
@@ -254,8 +254,8 @@ Version 2 follows go-screenplay v2 and its guide for writing an extension: a tes
 | `ability.CommunicateWithNATS().UsingTheServerAt(url)` | unchanged; the connection is opened by the first action |
 | `ability.Message().To(s).Containing(d).WithHeader(k, v)` | the chain of `publish.TheMessage()` and `send.TheRequest()`, with `WithTheHeader(k, v)` |
 | `action.ConnectToNATS().At(url)` | `connect.ToTheNATSServerAt(url)` |
-| `action.SubscribeTo(s)` and its chain | `subscribe.To(s)` and the same chain |
-| `action.SubscribeToTheSubjectStartingWith(p)` | `subscribe.ToTheSubjectStartingWith(p)` |
+| `action.SubscribeTo(s)` and its chain | `subscribe.To(s)`; `UsingTheQueue(q)` became `InTheQueueGroup(q)` |
+| `action.SubscribeToTheSubjectStartingWith(p)` | `subscribe.ToTheSubjectsStartingWith(p)` |
 | `action.UnsubscribeFrom(s)` | `unsubscribe.From(s)` |
 | `action.Publish(message)` | `publish.TheMessage().To(s).Containing(d)` |
 | `action.Request(message).For(n).Seconds()` | `send.TheRequest().To(s).Containing(d).TimingOutAfter(n).Seconds()` |

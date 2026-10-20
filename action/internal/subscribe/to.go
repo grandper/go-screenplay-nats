@@ -17,7 +17,7 @@ import (
 // they arrive. Wildcards are allowed in the subject:
 //
 //	subscribe.To("orders.*.created")
-//	subscribe.To("orders").UsingTheQueue("workers").Asynchronously()
+//	subscribe.To("orders").InTheQueueGroup("workers").Asynchronously()
 //	subscribe.To("orders").AndUnsubscribeAfter(10).Messages()
 func To(subject string) *ToAction {
 	return &ToAction{
@@ -26,11 +26,12 @@ func To(subject string) *ToAction {
 	}
 }
 
-// ToTheSubjectStartingWith subscribes the actor to every subject starting
-// with the prefix, which is the subject "prefix.>":
+// ToTheSubjectsStartingWith subscribes the actor to every subject starting
+// with the prefix, which is the subject "prefix.>"; it reads "subscribe to
+// the subjects starting with orders":
 //
-//	subscribe.ToTheSubjectStartingWith("orders")
-func ToTheSubjectStartingWith(prefix string) *ToAction {
+//	subscribe.ToTheSubjectsStartingWith("orders")
+func ToTheSubjectsStartingWith(prefix string) *ToAction {
 	subject := prefix + ".>"
 	if prefix == "" {
 		subject = ""
@@ -38,7 +39,7 @@ func ToTheSubjectStartingWith(prefix string) *ToAction {
 
 	return &ToAction{
 		subject:     subject,
-		description: "subscribe to the subject starting with " + verdict.Describe(prefix),
+		description: "subscribe to the subjects starting with " + verdict.Describe(prefix),
 	}
 }
 
@@ -53,13 +54,13 @@ type ToAction struct {
 	parts        []string
 }
 
-// UsingTheQueue makes the subscription part of the queue group, so that
-// each message is delivered to one subscriber of the group; it reads "using
-// the queue workers".
-func (a *ToAction) UsingTheQueue(queue string) *ToAction {
+// InTheQueueGroup makes the subscription part of the queue group, so that
+// each message is delivered to one subscriber of the group; it reads "in the
+// queue group workers".
+func (a *ToAction) InTheQueueGroup(queue string) *ToAction {
 	a.queue = queue
 	a.queueWritten = true
-	a.parts = append(a.parts, "using the queue "+verdict.Describe(queue))
+	a.parts = append(a.parts, "in the queue group "+verdict.Describe(queue))
 
 	return a
 }

@@ -60,7 +60,7 @@ func TestTo(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
-			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).UsingTheQueue(queue)))
+			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup(queue)))
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
@@ -69,7 +69,7 @@ func TestTo(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
-			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).UsingTheQueue(queue).Asynchronously()))
+			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup(queue).Asynchronously()))
 
 			require.NoError(t, nc.Publish(subject, []byte("hello")))
 			require.ErrorIs(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)), nats.ErrSyncSubRequired)
@@ -93,7 +93,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("fails when the queue is empty", func(t *testing.T) {
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
-			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject).UsingTheQueue("")), action.ErrQueueIsEmpty)
+			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup("")), action.ErrQueueIsEmpty)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestTo(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
-			require.NoError(t, adam.AttemptsTo(subscribe.ToTheSubjectStartingWith(subject)))
+			require.NoError(t, adam.AttemptsTo(subscribe.ToTheSubjectsStartingWith(subject)))
 
 			require.NoError(t, nc.Publish(subject+".created", []byte("hello")))
 			require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject+".>")))
@@ -127,7 +127,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("fails when the prefix is empty", func(t *testing.T) {
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
-			require.ErrorIs(t, adam.AttemptsTo(subscribe.ToTheSubjectStartingWith("")), action.ErrSubjectIsEmpty)
+			require.ErrorIs(t, adam.AttemptsTo(subscribe.ToTheSubjectsStartingWith("")), action.ErrSubjectIsEmpty)
 		})
 	})
 
@@ -137,12 +137,12 @@ func TestTo(t *testing.T) {
 
 		require.NoError(
 			t,
-			adam.AttemptsTo(subscribe.To(subject).UsingTheQueue(queue).AndUnsubscribeAfter(2).Messages()),
+			adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup(queue).AndUnsubscribeAfter(2).Messages()),
 		)
 
 		assert.Equal(
 			t,
-			`Adam attempts to subscribe to "orders" using the queue "workers" and unsubscribe after 2 messages`,
+			`Adam attempts to subscribe to "orders" in the queue group "workers" and unsubscribe after 2 messages`,
 			recorder.Messages()[0],
 		)
 	})
@@ -153,13 +153,13 @@ func TestTo(t *testing.T) {
 		assert.Equal(t, `subscribe to "orders" asynchronously`, subscribe.To(subject).Asynchronously().String())
 		assert.Equal(
 			t,
-			`subscribe to "orders" using the queue "workers"`,
-			subscribe.To(subject).UsingTheQueue(queue).String(),
+			`subscribe to "orders" in the queue group "workers"`,
+			subscribe.To(subject).InTheQueueGroup(queue).String(),
 		)
 		assert.Equal(
 			t,
-			`subscribe to "orders" asynchronously using the queue "workers"`,
-			subscribe.To(subject).Asynchronously().UsingTheQueue(queue).String(),
+			`subscribe to "orders" asynchronously in the queue group "workers"`,
+			subscribe.To(subject).Asynchronously().InTheQueueGroup(queue).String(),
 		)
 		assert.Equal(
 			t,
@@ -173,8 +173,8 @@ func TestTo(t *testing.T) {
 		)
 		assert.Equal(
 			t,
-			`subscribe to the subject starting with "orders"`,
-			subscribe.ToTheSubjectStartingWith(subject).String(),
+			`subscribe to the subjects starting with "orders"`,
+			subscribe.ToTheSubjectsStartingWith(subject).String(),
 		)
 	})
 }
