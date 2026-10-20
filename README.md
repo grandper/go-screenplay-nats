@@ -238,6 +238,37 @@ err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFro
 // NATS User should see that the NATS messages should have been received from "orders.created"
 ```
 
+## Migrating from v1
+Version 2 follows go-screenplay v2 and its guide for writing an extension: a test only reaches the actor, every statement reads as English and is narrated word for word, and no struct of the extension can be named. The changes were made one concept at a time:
+
+1. the module became `github.com/grandper/go-screenplay-nats/v2`;
+2. the dependency became go-screenplay v2: questions and resolutions are typed, the verb is `ShouldHave`;
+3. the operations of the ability moved to `internal/ability`, behind `TheAbilityOf(actor)`;
+4. the actions moved to packages named after their verb, and the message is built on the publish and send actions;
+5. the questions return `screenplay.Question[T]`, with fake connections in `question/fixture`;
+6. the resolutions are built with `resolution.FromFunc` and closed by a verb.
+
+| v1 | v2 |
+|----|----|
+| `ability.CommunicateWithNATS().Using(nc)` | unchanged |
+| `ability.CommunicateWithNATS().UsingServerAt(url)` | unchanged; the connection is opened by the first action |
+| `ability.Message().To(s).Containing(d).WithHeader(k, v)` | the chain of `publish.TheMessage()` and `send.TheRequest()`, with `WithTheHeader(k, v)` |
+| `action.ConnectToNATS().At(url)` | `connect.ToTheNATSServerAt(url)` |
+| `action.SubscribeTo(s)` and its chain | `subscribe.To(s)` and the same chain |
+| `action.SubscribeToTheSubjectStartingWith(p)` | `subscribe.ToTheSubjectStartingWith(p)` |
+| `action.UnsubscribeFrom(s)` | `unsubscribe.From(s)` |
+| `action.Publish(message)` | `publish.TheMessage().To(s).Containing(d)` |
+| `action.Request(message).For(n).Seconds()` | `send.TheRequest().To(s).Containing(d).TimingOutAfter(n).Seconds()` |
+| `action.ReceiveFrom(s)` | `receive.TheNextMessageFrom(s)`, waiting at most the actor's timeout |
+| `action.Flush()` | `flush.TheNATSConnection()` |
+| `question.NATSMessages().From(s)` | `question.NATSMessagesFrom(s)` |
+| `see.The(q).Has(been.Closed())`, `see.The(q).Have(been.Received())` | `see.The(q).ShouldHave(...)` |
+| `been.Received().From(s)` | `been.ReceivedFrom(s)` |
+| `ability.ErrSubjectIsEmpty`, `ability.ErrQueueIsEmpty`, `action.ErrFailedToConnect` | `action.ErrSubjectIsEmpty`, `action.ErrQueueIsEmpty`, `ability.ErrFailedToConnect` |
+| `ability.ErrMessageIsNil`, `ability.ErrNoMessageForSubject` | gone: no statement can build a nil message |
+
+Two behaviors changed: `UsingServerAt` no longer connects when the actor is created, so an unreachable server is reported by the first action; and connecting an actor that already holds a connection fails with `ability.ErrAlreadyConnected` instead of being ignored.
+
 ## Testing with an embedded NATS server
 The `fixture` package spins up an in-process NATS server so scenarios can run without an external broker. Both helpers take a `*testing.T` and register their own cleanup, so the server is shut down automatically when the test ends:
 ```go
