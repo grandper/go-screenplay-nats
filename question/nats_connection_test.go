@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,9 +20,9 @@ func TestNATSConnection(t *testing.T) {
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
 			connection, err := question.NATSConnection().AnsweredBy(adam)
 			require.NoError(t, err)
-			assert.False(t, connection.(*question.Connection).WasClosed())
-			assert.False(t, connection.(*question.Connection).WasDisconnected())
-			assert.False(t, connection.(*question.Connection).WasReconnected())
+			assert.False(t, connection.WasClosed())
+			assert.False(t, connection.WasDisconnected())
+			assert.False(t, connection.WasReconnected())
 		})
 
 		t.Run("the connection was closed", func(t *testing.T) {
@@ -32,9 +32,9 @@ func TestNATSConnection(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			connection, err := question.NATSConnection().AnsweredBy(adam)
 			require.NoError(t, err)
-			assert.True(t, connection.(*question.Connection).WasClosed())
-			assert.True(t, connection.(*question.Connection).WasDisconnected())
-			assert.False(t, connection.(*question.Connection).WasReconnected())
+			assert.True(t, connection.WasClosed())
+			assert.True(t, connection.WasDisconnected())
+			assert.False(t, connection.WasReconnected())
 		})
 
 		t.Run("the connection was reconnected", func(t *testing.T) {
@@ -44,9 +44,9 @@ func TestNATSConnection(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			connection, err := question.NATSConnection().AnsweredBy(adam)
 			require.NoError(t, err)
-			assert.False(t, connection.(*question.Connection).WasClosed())
-			assert.True(t, connection.(*question.Connection).WasDisconnected())
-			assert.True(t, connection.(*question.Connection).WasReconnected())
+			assert.False(t, connection.WasClosed())
+			assert.True(t, connection.WasDisconnected())
+			assert.True(t, connection.WasReconnected())
 		})
 	})
 

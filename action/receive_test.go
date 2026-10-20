@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	act "github.com/grandper/go-screenplay/action"
-	"github.com/grandper/go-screenplay/action/see"
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/action/keep"
+	"github.com/grandper/go-screenplay/v2/action/see"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +33,7 @@ func TestReceive(t *testing.T) {
 			require.NoError(t, adam.AttemptsTo(action.ReceiveFrom(subject)))
 			require.NoError(
 				t,
-				adam.Should(act.Eventually(see.The(question.NATSMessages().From(subject)).Have(been.Received()))),
+				adam.Should(keep.TryingTo(see.The(question.NATSMessages().From(subject)).ShouldHave(been.Received()))),
 			)
 		})
 

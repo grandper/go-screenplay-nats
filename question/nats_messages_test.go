@@ -3,9 +3,8 @@ package question_test
 import (
 	"testing"
 
-	"github.com/grandper/go-screenplay/action/see"
-	"github.com/grandper/go-screenplay/screenplay"
-	"github.com/nats-io/nats.go"
+	"github.com/grandper/go-screenplay/v2/action/see"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -36,14 +35,14 @@ func TestNATSMessages(t *testing.T) {
 		t.Run("returns all messages when no subject is set", func(t *testing.T) {
 			answer, err := adam.AsksFor(question.NATSMessages())
 			require.NoError(t, err)
-			msg := answer.([]*nats.Msg)
+			msg := answer
 			require.Len(t, msg, 2)
 		})
 
 		t.Run("returns all messages for a specific subject", func(t *testing.T) {
 			answer, err := adam.AsksFor(question.NATSMessages().From(subject1))
 			require.NoError(t, err)
-			msg := answer.([]*nats.Msg)
+			msg := answer
 			require.Len(t, msg, 1)
 		})
 	})
@@ -51,7 +50,7 @@ func TestNATSMessages(t *testing.T) {
 	t.Run("fails to get the NATS messages if the actor does not have the ability CommunicateWithNATS",
 		func(t *testing.T) {
 			bob := screenplay.ActorNamed("Bob")
-			assert.Error(t, bob.AttemptsTo(see.The(question.NATSMessages()).Have(been.Received())))
+			assert.Error(t, bob.AttemptsTo(see.The(question.NATSMessages()).ShouldHave(been.Received())))
 		},
 	)
 

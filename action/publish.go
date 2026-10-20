@@ -1,7 +1,7 @@
 package action
 
 import (
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
@@ -20,10 +20,7 @@ func Publish(message *ability.NATSMessage) *PublishAction {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *PublishAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
-	if err != nil {
-		return err
-	}
+	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
 	return communicateWithNATS.Publish(a.message)
 }
 

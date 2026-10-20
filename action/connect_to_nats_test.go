@@ -3,7 +3,7 @@ package action_test
 import (
 	"testing"
 
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -34,7 +34,7 @@ func TestConnectToNATS(t *testing.T) {
 			const invalidURL = "nats://invalid:4222"
 			eve := screenplay.ActorNamed("Eve").WhoCan(ability.CommunicateWithNATS())
 			require.ErrorIs(t, eve.AttemptsTo(action.ConnectToNATS().At(invalidURL)),
-				action.ErrFailedToConnect)
+				ability.ErrFailedToConnect)
 		})
 
 		t.Run("fails when the actor has not the ability to communicate with NATS", func(t *testing.T) {

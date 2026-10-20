@@ -1,7 +1,7 @@
 package question
 
 import (
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
@@ -23,10 +23,10 @@ func (q *NATSConnectionQuestion) String() string {
 // Each call captures the state at that instant; the returned *Connection
 // is immutable and becomes stale as soon as the underlying connection changes.
 // Always re-ask this question rather than caching the result.
-func (q *NATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any, error) {
-	theActorCommunicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
-	if err != nil {
-		return nil, err
+func (q *NATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (*Connection, error) {
+	theActorCommunicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
+	if theActorCommunicateWithNATS == nil {
+		return nil, screenplay.ErrActorMissingAbility
 	}
 	return &Connection{
 		wasClosed:       theActorCommunicateWithNATS.ConnectionWasClosed(),
@@ -36,4 +36,4 @@ func (q *NATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (any, er
 }
 
 // NATSConnectionQuestion implements the screenplay.Question interface.
-var _ screenplay.Question = (*NATSConnectionQuestion)(nil)
+var _ screenplay.Question[*Connection] = (*NATSConnectionQuestion)(nil)

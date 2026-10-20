@@ -3,8 +3,8 @@ package action
 import (
 	"time"
 
-	"github.com/grandper/go-screenplay/screenplay"
-	"github.com/grandper/go-screenplay/timing"
+	"github.com/grandper/go-screenplay/v2/action/timing"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
@@ -39,11 +39,8 @@ func (a *RequestAction) For(value int) *timing.DurationBuilder[RequestAction] {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *RequestAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
-	if err != nil {
-		return err
-	}
-	_, err = communicateWithNATS.Request(a.message, a.timeout)
+	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
+	_, err := communicateWithNATS.Request(a.message, a.timeout)
 	return err
 }
 

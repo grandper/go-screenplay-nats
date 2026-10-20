@@ -4,9 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	act "github.com/grandper/go-screenplay/action"
-	"github.com/grandper/go-screenplay/action/see"
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/action/keep"
+	"github.com/grandper/go-screenplay/v2/action/see"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,9 +51,9 @@ func TestRequest(t *testing.T) {
 			}()
 
 			require.NoError(t, alice.AttemptsTo(action.Request(aMessage)))
-			require.NoError(t, alice.Should(act.Eventually(see.The(
+			require.NoError(t, alice.Should(keep.TryingTo(see.The(
 				question.NATSMessages().From(subject),
-			).Have(been.Received()))))
+			).ShouldHave(been.Received()))))
 		})
 
 		t.Run("fails when the response is not fast enough", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestRequest(t *testing.T) {
 		assert.Equal(t, "send a nil request", actionNil.String())
 
 		action2 := action.Request(aMessage).For(0).Second()
-		assert.Equal(t, "send a request to test.subject for 0 second", action2.String())
+		assert.Equal(t, "send a request to test.subject for 0 seconds", action2.String())
 
 		action3 := action.Request(aMessage).For(1).Second()
 		assert.Equal(t, "send a request to test.subject for 1 second", action3.String())
@@ -113,7 +113,7 @@ func TestRequest(t *testing.T) {
 		assert.Equal(t, "send a request to test.subject for 6 seconds", action4.String())
 
 		action5 := action.Request(aMessage).For(0).Millisecond()
-		assert.Equal(t, "send a request to test.subject for 0 millisecond", action5.String())
+		assert.Equal(t, "send a request to test.subject for 0 milliseconds", action5.String())
 
 		action6 := action.Request(aMessage).For(1).Millisecond()
 		assert.Equal(t, "send a request to test.subject for 1 millisecond", action6.String())

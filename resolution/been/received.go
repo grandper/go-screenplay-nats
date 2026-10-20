@@ -2,22 +2,18 @@ package been
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/nats-io/nats.go"
 )
 
-var (
-	// ErrNotMessages is returned when the object is not NATS messages.
-	ErrNotMessages = errors.New("invalid object type: expect NATS messages")
-)
-
-// Received is a matcher to tell if NATS messages have been received.
+// Received is a resolution to tell if NATS messages have been received.
 func Received() *ReceivedResolution {
 	return &ReceivedResolution{}
 }
 
-// ReceivedResolution is a matcher to tell if NATS messages have been received.
+// ReceivedResolution is a resolution to tell if NATS messages have been received.
 type ReceivedResolution struct {
 	subject string
 }
@@ -28,36 +24,30 @@ func (r *ReceivedResolution) From(subject string) *ReceivedResolution {
 	return r
 }
 
-// Resolve creates a matcher to make an assertion.
-func (r *ReceivedResolution) Resolve() screenplay.Matcher {
-	return func(obj any) (bool, error) {
-		switch value := obj.(type) {
-		case []*nats.Msg:
-			return r.messageReceived(value), nil
-		case nil:
-			return false, nil
-		default:
-			return false, ErrNotMessages
-		}
-	}
-}
-
-func (r *ReceivedResolution) messageReceived(messages []*nats.Msg) bool {
+// Inspect returns nil when at least one message has been received, from the
+// subject when one is set, and an error otherwise.
+func (r *ReceivedResolution) Inspect(messages []*nats.Msg) error {
 	if r.subject == "" {
-		return len(messages) > 0
+		if len(messages) == 0 {
+			return errors.New("no message has been received")
+		}
+		return nil
 	}
 	for _, msg := range messages {
-		if msg.Subject == r.subject {
-			return true
+		if msg != nil && msg.Subject == r.subject {
+			return nil
 		}
 	}
-	return false
+	return fmt.Errorf("no message has been received from %s", r.subject)
 }
 
 // String describes the resolution's expectation.
 func (r *ReceivedResolution) String() string {
+	if r.subject != "" {
+		return "been received from " + r.subject
+	}
 	return "been received"
 }
 
 // ReceivedResolution implements the screenplay.Resolution interface.
-var _ screenplay.Resolution = (*ReceivedResolution)(nil)
+var _ screenplay.Resolution[[]*nats.Msg] = (*ReceivedResolution)(nil)

@@ -3,7 +3,7 @@ package action
 import (
 	"fmt"
 
-	"github.com/grandper/go-screenplay/screenplay"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
@@ -75,10 +75,7 @@ func (a *SubscribeToAction) AndUnsubscribeAfter(maxWantedMessages int) *Subscrib
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *SubscribeToAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS, err := screenplay.UseAbilityTo[*ability.CommunicateWithNATSAbility]().Of(theActor)
-	if err != nil {
-		return err
-	}
+	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
 	if a.subject == "" {
 		return ability.ErrSubjectIsEmpty
 	}

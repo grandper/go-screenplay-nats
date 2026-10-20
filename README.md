@@ -11,14 +11,14 @@ go get github.com/grandper/go-screenplay-nats/v2
 ```
 
 ## Ability
-This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability can be instantiated from an existing NATS connection using `Using(nc)`, or directly from a server URL using `UsingServerAt("nats://localhost:4222")`.
+This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `Using(nc)`, or the URL of a server with `UsingServerAt("nats://localhost:4222")`.
 
 First, import the package:
 ```go
 import (
     "github.com/nats-io/nats.go"
-    "github.com/grandper/go-screenplay/screenplay"
-    "github.com/grandper/go-screenplay/action/see"
+    "github.com/grandper/go-screenplay/v2/screenplay"
+    "github.com/grandper/go-screenplay/v2/action/see"
     "github.com/grandper/go-screenplay-nats/v2/ability"
     "github.com/grandper/go-screenplay-nats/v2/action"
     "github.com/grandper/go-screenplay-nats/v2/fixture"
@@ -35,20 +35,13 @@ Finally, create an actor and give it the `CommunicateWithNATS` ability:
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
 ```
-Alternatively, let the ability open the connection itself from a server URL:
+Alternatively, let the ability open the connection itself from a server URL. The connection is opened the first time the actor uses the ability, so an unreachable server is reported by the first action, with an error wrapping `ability.ErrFailedToConnect`:
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://localhost:4222"))
 ```
+An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, until it performs the `ConnectToNATS` action.
 
-> **_NOTE:_** Since the connection is not created by the actor, you are responsible for cleaning up the connection when it is no longer needed.
-> ```go
-> // Drain connection (Preferred for responders)
-> // Close() not needed if this is called.
-> nc.Drain()
->
-> // Close connection
-> nc.Close()
->```
+> **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
 
 You can of course use all the available options when creating the NATS connection, see [NATS Go client](https://github.com/nats-io/nats.go) for more details.
 
@@ -59,6 +52,7 @@ The `ConnectToNATS` action allows an actor to connect to a NATS server. It can b
 ```go
 err := actor.AttemptsTo(action.ConnectToNATS().At("nats://localhost:4222"))
 ```
+It fails with `action.ErrURLIsEmpty` when no URL is given, with an error wrapping `ability.ErrFailedToConnect` when the server cannot be reached, and with `ability.ErrAlreadyConnected` when the actor already holds a connection.
 
 ### SubscribeTo
 The `SubscribeTo` action allows an actor to subscribe to a NATS subject without providing a message handler. It can be used as follows:
@@ -148,16 +142,16 @@ err := actor.AttemptsTo(action.Flush())
 ### NATSConnection
 The `NATSConnection` question allows an actor to retrieve the underlying NATS connection. It can be used as follows:
 ```go
-err := actor.Should(see.The(question.NATSConnection()).Has(been.Closed()))
-err := actor.Should(see.The(question.NATSConnection()).Has(been.Disconnected()))
-err := actor.Should(see.The(question.NATSConnection()).Has(been.Reconnected()))
+err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
+err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Disconnected()))
+err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Reconnected()))
 ```
 
 ### NATSMessages
 The `NATSMessages` question allows an actor to retrieve all messages received on a specific NATS subject. It can be used as follows:
 ```go
-err := actor.Should(see.The(question.NATSMessages().From("subject")).Have(been.Received()))
-err := actor.Should(see.The(question.NATSMessages()).Have(been.Received().From("subject")))
+err := actor.Should(see.The(question.NATSMessages().From("subject")).ShouldHave(been.Received()))
+err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.Received().From("subject")))
 ```
 
 ## Testing with an embedded NATS server
@@ -186,7 +180,7 @@ func TestReceivesAPublishedMessage(t *testing.T) {
     ))
 
     require.NoError(t, actor.Should(
-        see.The(question.NATSMessages().From("greetings")).Have(been.Received()),
+        see.The(question.NATSMessages().From("greetings")).ShouldHave(been.Received()),
     ))
 }
 ```

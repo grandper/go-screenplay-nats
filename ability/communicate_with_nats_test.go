@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,58 +15,96 @@ import (
 )
 
 func TestCommunicateWithNATS(t *testing.T) {
-	t.Run("should be created using a connection", func(t *testing.T) {
+	t.Run("is given a connection with Using", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			a := ability.CommunicateWithNATS().Using(nc)
-			require.NotNil(t, a)
-			require.NoError(t, a.Forget())
-		})
-
-		t.Run("cannot be created without NATS connection", func(t *testing.T) {
-			assert.Nil(t, ability.CommunicateWithNATS())
-			assert.Nil(t, ability.CommunicateWithNATS().Using(nil))
-		})
-
-		t.Run("does not replace an already-initialized ability", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			a := ability.CommunicateWithNATS().Using(nc)
 			require.NotNil(t, a)
 			require.NoError(t, a.SubscribeTo("test.subject", 0))
 			assert.Equal(t, 1, nc.NumSubscriptions())
+			require.NoError(t, a.Forget())
+		})
 
-			same := a.Using(nc)
-			assert.Same(t, a, same)
+		t.Run("has no connection until one is given", func(t *testing.T) {
+			require.NotNil(t, ability.CommunicateWithNATS())
+			require.ErrorIs(t, ability.CommunicateWithNATS().Flush(), ability.ErrNATSConnectionNotSet)
+			require.ErrorIs(t, ability.CommunicateWithNATS().Using(nil).Flush(), ability.ErrNATSConnectionNotSet)
+		})
+
+		t.Run("keeps the first connection it was given", func(t *testing.T) {
+			nc := fixture.CreateEmbeddedNATSServer(t)
+			other := fixture.CreateEmbeddedNATSServer(t)
+			a := ability.CommunicateWithNATS().Using(nc)
+			require.NoError(t, a.SubscribeTo("test.subject", 0))
 			assert.Equal(t, 1, nc.NumSubscriptions())
+
+			same := a.Using(other)
+			assert.Same(t, a, same)
+			require.NoError(t, a.SubscribeTo("other.subject", 0))
+			assert.Equal(t, 2, nc.NumSubscriptions())
+			assert.Equal(t, 0, other.NumSubscriptions())
 			require.NoError(t, a.Forget())
 		})
 	})
 
-	t.Run("can be created from a NATS server url", func(t *testing.T) {
-		t.Run("successfully", func(t *testing.T) {
+	t.Run("is given the URL of a server with UsingServerAt", func(t *testing.T) {
+		t.Run("connects when it is first used", func(t *testing.T) {
+			natsServer := fixture.RunNATSServer(t)
+			a := ability.CommunicateWithNATS().UsingServerAt(natsServer.ClientURL())
+			require.NotNil(t, a)
+			assert.Equal(t, 0, natsServer.NumClients())
+
+			require.NoError(t, a.Flush())
+			assertEventually(t, func() bool { return natsServer.NumClients() == 1 })
+			require.NoError(t, a.Forget())
+		})
+
+		t.Run("fails when it is used with an empty URL", func(t *testing.T) {
+			err := ability.CommunicateWithNATS().UsingServerAt("").Flush()
+			require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
+		})
+
+		t.Run("fails when it is used with an unreachable URL", func(t *testing.T) {
+			err := ability.CommunicateWithNATS().UsingServerAt("nats://invalid:4222").Flush()
+			require.ErrorIs(t, err, ability.ErrFailedToConnect)
+		})
+
+		t.Run("keeps the connection it was given", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
-			require.NotNil(t, ability.CommunicateWithNATS().UsingServerAt(nc.ConnectedUrl()))
+			other := fixture.RunNATSServer(t)
+			a := ability.CommunicateWithNATS().Using(nc)
+
+			same := a.UsingServerAt(other.ClientURL())
+			assert.Same(t, a, same)
+			require.NoError(t, a.Flush())
+			assert.Equal(t, 0, other.NumClients())
+			require.NoError(t, a.Forget())
+		})
+	})
+
+	t.Run("connects to a server with ConnectTo", func(t *testing.T) {
+		t.Run("successfully", func(t *testing.T) {
+			natsServer := fixture.RunNATSServer(t)
+			a := ability.CommunicateWithNATS()
+			require.NoError(t, a.ConnectTo(natsServer.ClientURL()))
+			assertEventually(t, func() bool { return natsServer.NumClients() == 1 })
+			require.NoError(t, a.Forget())
 		})
 
-		t.Run("cannot be created without empty url", func(t *testing.T) {
-			require.Nil(t, ability.CommunicateWithNATS().UsingServerAt(""))
+		t.Run("fails when the URL is unreachable", func(t *testing.T) {
+			err := ability.CommunicateWithNATS().ConnectTo("nats://invalid:4222")
+			require.ErrorIs(t, err, ability.ErrFailedToConnect)
 		})
 
-		t.Run("cannot be created with invalid url", func(t *testing.T) {
-			require.Nil(t, ability.CommunicateWithNATS().UsingServerAt("foobar"))
-		})
-
-		t.Run("does not replace an already-initialized ability", func(t *testing.T) {
+		t.Run("fails when already connected", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			a := ability.CommunicateWithNATS().Using(nc)
-			require.NotNil(t, a)
-			require.NoError(t, a.SubscribeTo("test.subject", 0))
-			assert.Equal(t, 1, nc.NumSubscriptions())
+			require.ErrorIs(t, a.ConnectTo(nc.ConnectedUrl()), ability.ErrAlreadyConnected)
+		})
 
-			same := a.UsingServerAt(nc.ConnectedUrl())
-			assert.Same(t, a, same)
-			assert.Equal(t, 1, nc.NumSubscriptions())
-			require.NoError(t, a.Forget())
+		t.Run("fails on a nil ability", func(t *testing.T) {
+			var a *ability.CommunicateWithNATSAbility
+			require.ErrorIs(t, a.ConnectTo("nats://localhost:4222"), screenplay.ErrActorMissingAbility)
 		})
 	})
 

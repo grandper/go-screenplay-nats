@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay/resolution/testdata"
-	"github.com/grandper/go-screenplay/screenplay"
+	resolutionfixture "github.com/grandper/go-screenplay/v2/resolution/fixture"
+	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -25,7 +25,7 @@ func TestReconnectedResolution(t *testing.T) {
 		connection, err := question.NATSConnection().AnsweredBy(adam)
 		require.NoError(t, err)
 
-		testdata.AssertMatch(t, been.Reconnected(), connection)
+		resolutionfixture.AssertMatch(t, been.Reconnected(), connection)
 	})
 
 	t.Run("fails when the connection was not reconnected", func(t *testing.T) {
@@ -35,12 +35,8 @@ func TestReconnectedResolution(t *testing.T) {
 		connection, err := question.NATSConnection().AnsweredBy(adam)
 		require.NoError(t, err)
 
-		testdata.AssertNoMatch(t, been.Reconnected(), connection)
-		testdata.AssertNoMatch(t, been.Reconnected(), nil)
-	})
-
-	t.Run("returns an error when the value is of the wrong type", func(t *testing.T) {
-		testdata.AssertMatcherFails(t, been.Reconnected(), 2)
+		resolutionfixture.AssertNoMatch(t, been.Reconnected(), connection)
+		resolutionfixture.AssertNoMatch(t, been.Reconnected(), nil)
 	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {
