@@ -2,41 +2,33 @@ package been_test
 
 import (
 	"testing"
-	"time"
 
-	resolutionfixture "github.com/grandper/go-screenplay/v2/resolution/fixture"
-	"github.com/grandper/go-screenplay/v2/screenplay"
+	"github.com/grandper/go-screenplay/v2/resolution/fixture"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
-	"github.com/grandper/go-screenplay-nats/v2/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	questionfixture "github.com/grandper/go-screenplay-nats/v2/question/fixture"
 	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
-func TestDisconnectedResolution(t *testing.T) {
-	t.Run("should match if the connection is disconnected", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-		require.NoError(t, nc.ForceReconnect())
-		time.Sleep(100 * time.Millisecond)
-		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
-		connection, err := question.NATSConnection().AnsweredBy(adam)
-		require.NoError(t, err)
-
-		resolutionfixture.AssertMatch(t, been.Disconnected(), connection)
+func TestDisconnected(t *testing.T) {
+	t.Run("matches a connection that has been disconnected", func(t *testing.T) {
+		fixture.AssertMatch(t, been.Disconnected(), questionfixture.CreateFakeDisconnectedConnection())
 	})
 
-	t.Run("fails when the connection was not disconnected", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
-		connection, err := question.NATSConnection().AnsweredBy(adam)
-		require.NoError(t, err)
+	t.Run(
+		"matches a connection that has been closed or reconnected, since it was disconnected first",
+		func(t *testing.T) {
+			fixture.AssertMatch(t, been.Disconnected(), questionfixture.CreateFakeClosedConnection())
+			fixture.AssertMatch(t, been.Disconnected(), questionfixture.CreateFakeReconnectedConnection())
+		},
+	)
 
-		resolutionfixture.AssertNoMatch(t, been.Disconnected(), connection)
-		resolutionfixture.AssertNoMatch(t, been.Disconnected(), nil)
+	t.Run("does not match a connection that has not been disconnected", func(t *testing.T) {
+		fixture.AssertNoMatch(t, been.Disconnected(), questionfixture.CreateFakeConnection())
+	})
+
+	t.Run("does not match a nil connection", func(t *testing.T) {
+		fixture.AssertNoMatch(t, been.Disconnected(), nil)
 	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {

@@ -2,41 +2,25 @@ package been_test
 
 import (
 	"testing"
-	"time"
 
-	resolutionfixture "github.com/grandper/go-screenplay/v2/resolution/fixture"
-	"github.com/grandper/go-screenplay/v2/screenplay"
+	"github.com/grandper/go-screenplay/v2/resolution/fixture"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
-	"github.com/grandper/go-screenplay-nats/v2/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	questionfixture "github.com/grandper/go-screenplay-nats/v2/question/fixture"
 	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
-func TestClosedResolution(t *testing.T) {
-	t.Run("should match if the connection is closed", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-		nc.Close()
-		time.Sleep(100 * time.Millisecond)
-		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
-		connection, err := question.NATSConnection().AnsweredBy(adam)
-		require.NoError(t, err)
-
-		resolutionfixture.AssertMatch(t, been.Closed(), connection)
+func TestClosed(t *testing.T) {
+	t.Run("matches a connection that has been closed", func(t *testing.T) {
+		fixture.AssertMatch(t, been.Closed(), questionfixture.CreateFakeClosedConnection())
 	})
 
-	t.Run("fails when the connection is open", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
-		connection, err := question.NATSConnection().AnsweredBy(adam)
-		require.NoError(t, err)
+	t.Run("does not match a connection that has not been closed", func(t *testing.T) {
+		fixture.AssertNoMatch(t, been.Closed(), questionfixture.CreateFakeConnection())
+	})
 
-		resolutionfixture.AssertNoMatch(t, been.Closed(), connection)
-		resolutionfixture.AssertNoMatch(t, been.Closed(), nil)
+	t.Run("does not match a nil connection", func(t *testing.T) {
+		fixture.AssertNoMatch(t, been.Closed(), nil)
 	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {

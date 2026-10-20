@@ -4,50 +4,40 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/grandper/go-screenplay/v2/resolution"
 	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/nats-io/nats.go"
+
+	"github.com/grandper/go-screenplay-nats/v2/internal/verdict"
 )
 
-// Received is a resolution to tell if NATS messages have been received.
-func Received() *ReceivedResolution {
-	return &ReceivedResolution{}
-}
-
-// ReceivedResolution is a resolution to tell if NATS messages have been received.
-type ReceivedResolution struct {
-	subject string
-}
-
-// From sets the subject from which messages have been received.
-func (r *ReceivedResolution) From(subject string) *ReceivedResolution {
-	r.subject = subject
-	return r
-}
-
-// Inspect returns nil when at least one message has been received, from the
-// subject when one is set, and an error otherwise.
-func (r *ReceivedResolution) Inspect(messages []*nats.Msg) error {
-	if r.subject == "" {
+// Received creates a resolution to tell if at least one message has been
+// received; it reads "been received".
+func Received() screenplay.Resolution[[]*nats.Msg] {
+	return resolution.FromFunc("been received", func(messages []*nats.Msg) error {
 		if len(messages) == 0 {
 			return errors.New("no message has been received")
 		}
+
 		return nil
-	}
-	for _, msg := range messages {
-		if msg != nil && msg.Subject == r.subject {
-			return nil
-		}
-	}
-	return fmt.Errorf("no message has been received from %s", r.subject)
+	})
 }
 
-// String describes the resolution's expectation.
-func (r *ReceivedResolution) String() string {
-	if r.subject != "" {
-		return "been received from " + r.subject
-	}
-	return "been received"
-}
+// ReceivedFrom creates a resolution to tell if at least one message has been
+// received from the subject; it reads "been received from orders". The
+// subject is the one the message was published to, so a message received
+// through a wildcard subscription matches its own subject.
+func ReceivedFrom(subject string) screenplay.Resolution[[]*nats.Msg] {
+	return resolution.FromFunc(
+		"been received from "+verdict.Describe(subject),
+		func(messages []*nats.Msg) error {
+			for _, msg := range messages {
+				if msg != nil && msg.Subject == subject {
+					return nil
+				}
+			}
 
-// ReceivedResolution implements the screenplay.Resolution interface.
-var _ screenplay.Resolution[[]*nats.Msg] = (*ReceivedResolution)(nil)
+			return fmt.Errorf("no message has been received from %s", verdict.Describe(subject))
+		},
+	)
+}

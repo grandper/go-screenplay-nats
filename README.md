@@ -183,6 +183,26 @@ err := actor.Should(see.The(number.Of(question.NATSMessagesFrom("orders"))).Shou
 lastOrder, err := actor.AsksFor(last.Of(question.NATSMessagesFrom("orders"))) // lastOrder is a *nats.Msg
 ```
 
+## Resolutions
+The `been` package holds the resolutions of this extension. Each one reads after the verb `ShouldHave`, and a negation lives only in the verb: `ShouldNotHave(been.Closed())` reads "should not have been closed".
+
+`been.Closed()`, `been.Disconnected()` and `been.Reconnected()` inspect the answer of `question.NATSConnection()`. A connection that has been closed or reconnected has been disconnected first:
+```go
+err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
+// NATS User should see that the NATS connection should have been closed
+// fails: NATS User failed to see that the NATS connection should have been closed: it has not been closed
+err := actor.Should(see.The(question.NATSConnection()).ShouldNotHave(been.Disconnected()))
+// NATS User should see that the NATS connection should not have been disconnected
+```
+`been.Received()` and `been.ReceivedFrom(subject)` inspect the answer of `question.NATSMessages()` or `question.NATSMessagesFrom(subject)`. The subject of `ReceivedFrom` is the one a message was published to, so a message received through a wildcard subscription matches its own subject:
+```go
+err := actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from "orders" should have been received
+// fails: NATS User failed to see that the NATS messages from "orders" should have been received: no message has been received
+err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFrom("orders.created")))
+// NATS User should see that the NATS messages should have been received from "orders.created"
+```
+
 ### Fake answers
 The `question/fixture` package builds the answer of `NATSConnection` without a server, to test code that receives it:
 ```go
