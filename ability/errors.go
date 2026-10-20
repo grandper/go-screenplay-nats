@@ -15,9 +15,6 @@ var (
 	// already holds a connection.
 	ErrAlreadyConnected = impl.ErrAlreadyConnected
 
-	// ErrMessageIsNil is returned when the message to publish or to send is nil.
-	ErrMessageIsNil = impl.ErrMessageIsNil
-
 	// ErrSubscriptionAlreadyExists is returned when a subscription for the subject already exists.
 	ErrSubscriptionAlreadyExists = impl.ErrSubscriptionAlreadyExists
 

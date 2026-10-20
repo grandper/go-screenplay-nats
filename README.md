@@ -1,14 +1,40 @@
 # go-screenplay-nats
-This project is an extension of [go-screenplay](https://github.com/grandper/go-screenplay) to use NATS.
+This project is an extension of [go-screenplay](https://github.com/grandper/go-screenplay) to drive a NATS server. It bundles the ability to communicate with NATS together with the actions, questions and resolutions that go with it, so you test a messaging scenario with the same screenplay vocabulary you use everywhere else. A test reads as English, and everything the actor does is narrated:
+```go
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
 
-The `Screenplay` pattern is a design pattern for writing high-quality, maintainable automated tests. It emphasizes the use of actors, abilities, tasks, and questions to create a clear and expressive way to describe test scenarios.
-
-In this document, we describe how to develop NATS scenarios using the Screenplay pattern and this package.
+err := actor.AttemptsTo(subscribe.To("orders"))
+// NATS User attempts to subscribe to "orders"
+err = actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from "orders" should have been received
+```
 
 ## Installation
 ```sh
 go get github.com/grandper/go-screenplay-nats/v2
 ```
+It requires go-screenplay v2.
+
+## Packages
+The symbols shown below live in these packages:
+
+| Package | Import path | Provides |
+|---------|-------------|----------|
+| `ability` | `github.com/grandper/go-screenplay-nats/v2/ability` | `CommunicateWithNATS`, `Connection`, `ErrNATSConnectionNotSet`, `ErrFailedToConnect`, `ErrAlreadyConnected`, `ErrSubscriptionAlreadyExists`, `ErrNoSubscriptionFound` |
+| `action` | `github.com/grandper/go-screenplay-nats/v2/action` | `ErrURLIsEmpty`, `ErrSubjectIsEmpty`, `ErrQueueIsEmpty` |
+| `connect` | `github.com/grandper/go-screenplay-nats/v2/action/connect` | `ToTheNATSServerAt` |
+| `subscribe` | `github.com/grandper/go-screenplay-nats/v2/action/subscribe` | `To`, `ToTheSubjectStartingWith` |
+| `unsubscribe` | `github.com/grandper/go-screenplay-nats/v2/action/unsubscribe` | `From` |
+| `publish` | `github.com/grandper/go-screenplay-nats/v2/action/publish` | `TheMessage` |
+| `send` | `github.com/grandper/go-screenplay-nats/v2/action/send` | `TheRequest` |
+| `receive` | `github.com/grandper/go-screenplay-nats/v2/action/receive` | `TheNextMessageFrom` |
+| `flush` | `github.com/grandper/go-screenplay-nats/v2/action/flush` | `TheNATSConnection` |
+| `question` | `github.com/grandper/go-screenplay-nats/v2/question` | `NATSConnection`, `NATSMessages`, `NATSMessagesFrom` |
+| `fixture` (of `question`) | `github.com/grandper/go-screenplay-nats/v2/question/fixture` | `CreateFakeConnection`, `CreateFakeClosedConnection`, `CreateFakeDisconnectedConnection`, `CreateFakeReconnectedConnection` |
+| `been` | `github.com/grandper/go-screenplay-nats/v2/resolution/been` | `Closed`, `Disconnected`, `Reconnected`, `Received`, `ReceivedFrom` |
+| `fixture` | `github.com/grandper/go-screenplay-nats/v2/fixture` | `CreateEmbeddedNATSServer`, `RunNATSServer` |
+
+Assertions are written with the core screenplay packages (`action/see`, `question/last`, `question/number`, `resolution/be`, ...). The extension's `question` and `fixture` packages share their name with core packages: when a file uses both, keep the core name and alias the extension package with the `nats` prefix.
 
 ## Ability
 This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `Using(nc)`, or the URL of a server with `UsingServerAt("nats://localhost:4222")`.
@@ -183,6 +209,15 @@ err := actor.Should(see.The(number.Of(question.NATSMessagesFrom("orders"))).Shou
 lastOrder, err := actor.AsksFor(last.Of(question.NATSMessagesFrom("orders"))) // lastOrder is a *nats.Msg
 ```
 
+### Fake answers
+The `question/fixture` package builds the answer of `NATSConnection` without a server, to test code that receives it:
+```go
+connection := fixture.CreateFakeConnection()             // nothing happened to it
+connection := fixture.CreateFakeClosedConnection()       // disconnected, then closed
+connection := fixture.CreateFakeDisconnectedConnection() // disconnected, not reconnected yet
+connection := fixture.CreateFakeReconnectedConnection()  // disconnected, then reconnected
+```
+
 ## Resolutions
 The `been` package holds the resolutions of this extension. Each one reads after the verb `ShouldHave`, and a negation lives only in the verb: `ShouldNotHave(been.Closed())` reads "should not have been closed".
 
@@ -201,15 +236,6 @@ err := actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been
 // fails: NATS User failed to see that the NATS messages from "orders" should have been received: no message has been received
 err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFrom("orders.created")))
 // NATS User should see that the NATS messages should have been received from "orders.created"
-```
-
-### Fake answers
-The `question/fixture` package builds the answer of `NATSConnection` without a server, to test code that receives it:
-```go
-connection := fixture.CreateFakeConnection()             // nothing happened to it
-connection := fixture.CreateFakeClosedConnection()       // disconnected, then closed
-connection := fixture.CreateFakeDisconnectedConnection() // disconnected, not reconnected yet
-connection := fixture.CreateFakeReconnectedConnection()  // disconnected, then reconnected
 ```
 
 ## Testing with an embedded NATS server
@@ -243,6 +269,6 @@ func TestReceivesAPublishedMessage(t *testing.T) {
 }
 ```
 
-# References
+## References
 - [NATS documentation](https://docs.nats.io)
 - [NATS Go client](https://github.com/nats-io/nats.go)
