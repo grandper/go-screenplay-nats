@@ -12,25 +12,27 @@ import (
 )
 
 var (
-	// ErrNATSConnectionNotSet is returned when the ability has neither a NATS
-	// connection nor the URL of a server to connect to.
-	ErrNATSConnectionNotSet = errors.New("nats connection not set")
+	// ErrNATSConnectionNotSet is returned when the ability was given neither a
+	// NATS connection nor the URL of a server to connect to.
+	ErrNATSConnectionNotSet = errors.New("no connection to NATS was given")
 
 	// ErrFailedToConnect is returned when the connection to the NATS server fails.
 	ErrFailedToConnect = errors.New("failed to connect to the NATS server")
 
 	// ErrAlreadyConnected is returned when the ability is asked to connect while it
 	// already holds a connection.
-	ErrAlreadyConnected = errors.New("already connected to a NATS server")
+	ErrAlreadyConnected = errors.New("the actor is already connected to a NATS server")
 
 	// ErrMessageIsNil is returned when the message to publish or to send is nil.
-	ErrMessageIsNil = errors.New("message is nil")
+	ErrMessageIsNil = errors.New("the message is nil")
 
-	// ErrSubscriptionAlreadyExists is returned when a subscription for the subject already exists.
-	ErrSubscriptionAlreadyExists = errors.New("subscription for the subject already exists")
+	// ErrSubscriptionAlreadyExists is wrapped by the error returned when the
+	// actor subscribes again to a subject.
+	ErrSubscriptionAlreadyExists = errors.New("the actor is already subscribed to the subject")
 
-	// ErrNoSubscriptionFound is returned when no subscription is found for the subject.
-	ErrNoSubscriptionFound = errors.New("no subscription found for the subject")
+	// ErrNoSubscriptionFound is wrapped by the error returned when the actor
+	// unsubscribes from, or receives from, a subject it is not subscribed to.
+	ErrNoSubscriptionFound = errors.New("the actor is not subscribed to the subject")
 )
 
 // CommunicateWithNATS enables the actor to communicate with a NATS server. The
@@ -295,7 +297,7 @@ func (o *Operations) ToSubscribeTo(subject string, options SubscriptionOptions) 
 	defer c.mutex.Unlock()
 
 	if _, exists := c.subscriptions[subject]; exists {
-		return ErrSubscriptionAlreadyExists
+		return fmt.Errorf("%w %q", ErrSubscriptionAlreadyExists, subject)
 	}
 
 	sub, err := c.subscribe(nc, subject, options)
@@ -348,7 +350,7 @@ func (o *Operations) ToUnsubscribeFrom(subject string) error {
 
 	sub, ok := c.subscriptions[subject]
 	if !ok {
-		return fmt.Errorf("%w: %q", ErrNoSubscriptionFound, subject)
+		return fmt.Errorf("%w %q", ErrNoSubscriptionFound, subject)
 	}
 	if err := sub.Unsubscribe(); err != nil {
 		return fmt.Errorf("failed to unsubscribe from %q: %w", subject, err)
@@ -372,7 +374,7 @@ func (o *Operations) ToReceiveTheNextMessageFrom(ctx context.Context, subject st
 	sub, ok := c.subscriptions[subject]
 	c.mutex.RUnlock()
 	if !ok {
-		return fmt.Errorf("%w: %q", ErrNoSubscriptionFound, subject)
+		return fmt.Errorf("%w %q", ErrNoSubscriptionFound, subject)
 	}
 
 	msg, err := sub.NextMsgWithContext(ctx)
@@ -418,10 +420,10 @@ func (o *Operations) retrieveMessages(wanted func(subject string) bool) ([]*nats
 	return messages, nil
 }
 
-// ToRetrieveTheConnection returns a snapshot of what happened to the
-// connection. When the actor does not have the ability, it fails with
+// ToTellWhatHappenedToTheConnection returns a snapshot of what happened to
+// the connection: whether it was closed, disconnected or reconnected. When the actor does not have the ability, it fails with
 // screenplay.ErrActorMissingAbility.
-func (o *Operations) ToRetrieveTheConnection() (*Connection, error) {
+func (o *Operations) ToTellWhatHappenedToTheConnection() (*Connection, error) {
 	if _, err := o.connection(); err != nil {
 		return nil, err
 	}

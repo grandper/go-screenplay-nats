@@ -3,8 +3,8 @@ package ability
 import impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 
 var (
-	// ErrNATSConnectionNotSet is returned when the ability has neither a NATS
-	// connection nor the URL of a server to connect to.
+	// ErrNATSConnectionNotSet is returned when the ability was given neither a
+	// NATS connection nor the URL of a server to connect to.
 	ErrNATSConnectionNotSet = impl.ErrNATSConnectionNotSet
 
 	// ErrFailedToConnect is wrapped by the error returned when the connection to
@@ -15,10 +15,11 @@ var (
 	// already holds a connection.
 	ErrAlreadyConnected = impl.ErrAlreadyConnected
 
-	// ErrSubscriptionAlreadyExists is returned when a subscription for the subject already exists.
+	// ErrSubscriptionAlreadyExists is wrapped by the error returned when the
+	// actor subscribes again to a subject.
 	ErrSubscriptionAlreadyExists = impl.ErrSubscriptionAlreadyExists
 
-	// ErrNoSubscriptionFound is wrapped by the error returned when no subscription
-	// is found for the subject.
+	// ErrNoSubscriptionFound is wrapped by the error returned when the actor
+	// unsubscribes from, or receives from, a subject it is not subscribed to.
 	ErrNoSubscriptionFound = impl.ErrNoSubscriptionFound
 )

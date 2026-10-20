@@ -102,11 +102,11 @@ func TestTheMessage(t *testing.T) {
 
 			err = adam.AttemptsTo(publish.TheMessage(text).To(subject).WithTheHeaders("Key"))
 			require.ErrorIs(t, err, action.ErrInvalidHeaders)
-			require.EqualError(t, err, "invalid headers: WithTheHeaders should receive a list of key-value pairs")
+			require.EqualError(t, err, "invalid headers: a key is missing its value")
 
 			err = adam.AttemptsTo(publish.TheMessage(text).To(subject).WithTheHeaders())
 			require.ErrorIs(t, err, action.ErrInvalidHeaders)
-			require.EqualError(t, err, "invalid headers: WithTheHeaders should receive at least one key and its value")
+			require.EqualError(t, err, "invalid headers: at least one key and its value must be given")
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {

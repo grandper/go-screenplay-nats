@@ -71,7 +71,7 @@ Alternatively, let the ability open the connection itself from a server URL. The
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("nats://localhost:4222"))
 ```
-An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, until it performs the `connect.ToTheNATSServerAt` action.
+An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, "no connection to NATS was given", until it performs the `connect.ToTheNATSServerAt` action.
 
 > **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
 
@@ -131,7 +131,11 @@ err := actor.AttemptsTo(subscribe.To("orders").AndUnsubscribeAfter(10).Messages(
 err := actor.AttemptsTo(subscribe.To("orders").AndUnsubscribeAfter(1).Message())
 // NATS User attempts to subscribe to "orders" and unsubscribe after 1 message
 ```
-Subscribing twice to the same subject fails with `ability.ErrSubscriptionAlreadyExists`.
+Subscribing twice to the same subject fails with an error wrapping `ability.ErrSubscriptionAlreadyExists`:
+```go
+err := actor.AttemptsTo(subscribe.To("orders"), subscribe.To("orders"))
+// the actor is already subscribed to the subject "orders"
+```
 
 ### unsubscribe.From
 Unsubscribes the actor from a subject it subscribed to:
@@ -139,7 +143,11 @@ Unsubscribes the actor from a subject it subscribed to:
 err := actor.AttemptsTo(unsubscribe.From("orders"))
 // NATS User attempts to unsubscribe from "orders"
 ```
-It fails with an error wrapping `ability.ErrNoSubscriptionFound` when the actor did not subscribe to the subject.
+It fails with an error wrapping `ability.ErrNoSubscriptionFound` when the actor did not subscribe to the subject:
+```go
+err := actor.AttemptsTo(unsubscribe.From("invoices"))
+// the actor is not subscribed to the subject "invoices"
+```
 
 ### publish.TheMessage
 Publishes a message to the subject given with `To`. The message holds a text (`TheMessage`), bytes (`TheBinaryMessage`) or nothing (`AnEmptyMessage`):
@@ -163,7 +171,7 @@ err := actor.AttemptsTo(publish.TheMessage("Hello, World!").
 Nothing panics when the headers are written wrongly. An empty key, no header at all, or a key without its value is reported when the actor performs the action, with an error wrapping `action.ErrInvalidHeaders`:
 ```go
 err := actor.AttemptsTo(publish.TheMessage("Hello, World!").To("orders").WithTheHeaders("Key"))
-// invalid headers: WithTheHeaders should receive a list of key-value pairs
+// invalid headers: a key is missing its value
 ```
 
 ### send.TheRequest

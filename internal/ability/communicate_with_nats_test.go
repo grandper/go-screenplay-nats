@@ -27,7 +27,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	ctx := context.Background()
 	message := []byte("hello world")
 
-	t.Run("is given a connection with Using", func(t *testing.T) {
+	t.Run("is given a connection with UsingTheConnection", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
 			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
@@ -131,7 +131,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("reports what happened to the connection", func(t *testing.T) {
 		t.Run("nothing yet", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			connection, err := theAbility.ToRetrieveTheConnection()
+			connection, err := theAbility.ToTellWhatHappenedToTheConnection()
 			require.NoError(t, err)
 			assert.False(t, connection.WasClosed())
 			assert.False(t, connection.WasDisconnected())
@@ -142,7 +142,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
 			nc.Close()
 			assertEventually(t, func() bool {
-				connection, err := theAbility.ToRetrieveTheConnection()
+				connection, err := theAbility.ToTellWhatHappenedToTheConnection()
 				return err == nil && connection.WasClosed()
 			})
 		})
@@ -151,16 +151,16 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
 			require.NoError(t, nc.ForceReconnect())
 			assertEventually(t, func() bool {
-				connection, err := theAbility.ToRetrieveTheConnection()
+				connection, err := theAbility.ToTellWhatHappenedToTheConnection()
 				return err == nil && connection.WasDisconnected() && connection.WasReconnected()
 			})
-			connection, err := theAbility.ToRetrieveTheConnection()
+			connection, err := theAbility.ToTellWhatHappenedToTheConnection()
 			require.NoError(t, err)
 			assert.False(t, connection.WasClosed())
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			_, err := abilityWithoutConnection().ToRetrieveTheConnection()
+			_, err := abilityWithoutConnection().ToTellWhatHappenedToTheConnection()
 			require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 		})
 	})
@@ -446,6 +446,33 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 		testConcurrentUse(t, message)
 	})
 
+	t.Run("writes its errors as sentences", func(t *testing.T) {
+		theAbility, nc := connectedAbility(t)
+		require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
+
+		require.EqualError(
+			t,
+			theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}),
+			`the actor is already subscribed to the subject "test.subject"`,
+		)
+		require.EqualError(
+			t,
+			theAbility.ToUnsubscribeFrom("unknown"),
+			`the actor is not subscribed to the subject "unknown"`,
+		)
+		require.EqualError(
+			t,
+			theAbility.ToConnectTo(nc.ConnectedUrl()),
+			"the actor is already connected to a NATS server",
+		)
+		require.EqualError(t, abilityWithoutConnection().ToFlush(), "no connection to NATS was given")
+		require.ErrorContains(
+			t,
+			abilityWithoutConnection().ToConnectTo("nats://invalid:4222"),
+			`failed to connect to the NATS server at "nats://invalid:4222": `,
+		)
+	})
+
 	t.Run("fails every operation when the actor does not have the ability", func(t *testing.T) {
 		theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam"))
 		require.ErrorIs(t, theAbility.ToConnectTo("nats://localhost:4222"), screenplay.ErrActorMissingAbility)
@@ -467,7 +494,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
 		_, err = theAbility.ToRetrieveMessagesFrom(subject)
 		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
-		_, err = theAbility.ToRetrieveTheConnection()
+		_, err = theAbility.ToTellWhatHappenedToTheConnection()
 		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
 	})
 
@@ -562,7 +589,7 @@ func testConcurrentUse(t *testing.T, message []byte) {
 			errs <- theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message})
 			_, err := theAbility.ToRetrieveMessages()
 			errs <- err
-			_, err = theAbility.ToRetrieveTheConnection()
+			_, err = theAbility.ToTellWhatHappenedToTheConnection()
 			errs <- err
 			if i%2 == 0 {
 				errs <- theAbility.ToFlush()

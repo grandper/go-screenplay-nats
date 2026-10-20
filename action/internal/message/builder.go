@@ -53,12 +53,12 @@ func (b *Builder) WithTheHeaders(args ...string) {
 	switch {
 	case len(args) == 0:
 		b.parts = append(b.parts, "with the headers")
-		b.fail(fmt.Errorf("%w: WithTheHeaders should receive at least one key and its value", action.ErrInvalidHeaders))
+		b.fail(fmt.Errorf("%w: at least one key and its value must be given", action.ErrInvalidHeaders))
 
 		return
 	case len(args)%2 != 0:
 		b.parts = append(b.parts, "with the headers "+strings.Join(args, ", "))
-		b.fail(fmt.Errorf("%w: WithTheHeaders should receive a list of key-value pairs", action.ErrInvalidHeaders))
+		b.fail(fmt.Errorf("%w: a key is missing its value", action.ErrInvalidHeaders))
 
 		return
 	}

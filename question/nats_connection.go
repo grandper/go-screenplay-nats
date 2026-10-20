@@ -19,7 +19,7 @@ type natsConnectionQuestion struct{}
 
 // AnsweredBy returns a snapshot of what happened to the connection.
 func (q *natsConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (*ability.Connection, error) {
-	return impl.TheAbilityOf(theActor).ToRetrieveTheConnection()
+	return impl.TheAbilityOf(theActor).ToTellWhatHappenedToTheConnection()
 }
 
 // String describes the question.
