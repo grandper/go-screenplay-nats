@@ -7,26 +7,25 @@ import (
 	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
-// NATSConnection asks about the connection to NATS.
-func NATSConnection() *NATSConnectionQuestion {
-	return &NATSConnectionQuestion{}
+// NATSConnection asks what happened to the NATS connection of the actor. The
+// answer is a snapshot taken when the question is answered; ask again to
+// observe a later state.
+func NATSConnection() screenplay.Question[*ability.Connection] {
+	return &natsConnectionQuestion{}
 }
 
-// NATSConnectionQuestion asks about the NATS connection.
-type NATSConnectionQuestion struct{}
+// natsConnectionQuestion asks what happened to the NATS connection of the actor.
+type natsConnectionQuestion struct{}
 
-// String describes the question.
-func (q *NATSConnectionQuestion) String() string {
-	return "connection to NATS"
-}
-
-// AnsweredBy returns a point-in-time snapshot of the connection state.
-// Each call captures the state at that instant; the returned *Connection
-// is immutable and becomes stale as soon as the underlying connection changes.
-// Always re-ask this question rather than caching the result.
-func (q *NATSConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (*ability.Connection, error) {
+// AnsweredBy returns a snapshot of what happened to the connection.
+func (q *natsConnectionQuestion) AnsweredBy(theActor *screenplay.Actor) (*ability.Connection, error) {
 	return impl.TheAbilityOf(theActor).ToRetrieveTheConnection()
 }
 
-// NATSConnectionQuestion implements the screenplay.Question interface.
-var _ screenplay.Question[*ability.Connection] = (*NATSConnectionQuestion)(nil)
+// String describes the question.
+func (q *natsConnectionQuestion) String() string {
+	return "NATS connection"
+}
+
+// natsConnectionQuestion implements the screenplay.Question interface.
+var _ screenplay.Question[*ability.Connection] = (*natsConnectionQuestion)(nil)

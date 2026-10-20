@@ -32,7 +32,7 @@ func TestTheNextMessageFrom(t *testing.T) {
 
 			require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)))
 
-			messages, err := adam.AsksFor(question.NATSMessages().From(subject))
+			messages, err := adam.AsksFor(question.NATSMessagesFrom(subject))
 			require.NoError(t, err)
 			require.Len(t, messages, 1)
 			assert.Equal(t, content, messages[0].Data)

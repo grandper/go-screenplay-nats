@@ -133,7 +133,7 @@ err := actor.AttemptsTo(publish.TheMessage().
 `WithTheHeaders` narrates its headers sorted by key.
 
 ### send.TheRequest
-Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessages().From(subject)` finds it. The payload and the headers are given as for `publish.TheMessage`. The actor waits at most five seconds, unless `TimingOutAfter` is written:
+Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessagesFrom(subject)` finds it. The payload and the headers are given as for `publish.TheMessage`. The actor waits at most five seconds, unless `TimingOutAfter` is written:
 ```go
 err := actor.AttemptsTo(send.TheRequest().To("orders").Containing([]byte("ping")))
 // NATS User attempts to send the request to "orders" containing "ping"
@@ -145,7 +145,7 @@ err := actor.AttemptsTo(send.TheRequest().To("orders").TimingOutAfter(500).Milli
 A request nobody answers fails with `nats.ErrNoResponders`; a reply that does not come in time fails with an error wrapping `nats.ErrTimeout`. A deadline or a cancellation set on the actor's context stops the request as well.
 
 ### receive.TheNextMessageFrom
-Receives the next message of a synchronous subscription and stores it, where `question.NATSMessages().From(subject)` finds it. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`):
+Receives the next message of a synchronous subscription and stores it, where `question.NATSMessagesFrom(subject)` finds it. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`):
 ```go
 err := actor.AttemptsTo(receive.TheNextMessageFrom("orders"))
 // NATS User attempts to receive the next message from "orders"
@@ -160,20 +160,36 @@ err := actor.AttemptsTo(flush.TheNATSConnection())
 ```
 
 ## Questions
+A question is a noun phrase that the actor asks for, and its answer is typed: `see.The`, `AsksFor` and the core questions such as `last.Of` and `number.Of` work on it without any type assertion.
 
 ### NATSConnection
-The `NATSConnection` question answers with an `*ability.Connection`, a snapshot of what happened to the connection of the actor, read through `WasClosed()`, `WasDisconnected()` and `WasReconnected()`. It is taken when the question is answered and does not change afterwards, so ask the question again to observe a later state. It can be used as follows:
+`question.NATSConnection()` answers with an `*ability.Connection`, a snapshot of what happened to the connection of the actor, read through `WasClosed()`, `WasDisconnected()` and `WasReconnected()`. It is taken when the question is answered and does not change afterwards, so ask the question again to observe a later state:
 ```go
 err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
+// NATS User should see that the NATS connection should have been closed
 err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Disconnected()))
 err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Reconnected()))
+connection, err := actor.AsksFor(question.NATSConnection()) // connection is an *ability.Connection
 ```
 
 ### NATSMessages
-The `NATSMessages` question answers with the `[]*nats.Msg` received by the actor, in the order they were received: the messages of its subscriptions and the replies to its requests. `From(subject)` keeps the messages of the subscription to that subject, or the replies to the requests sent to it. It can be used as follows:
+`question.NATSMessages()` answers with the `[]*nats.Msg` received by the actor, in the order they were received: the messages of its subscriptions and the replies to its requests. `question.NATSMessagesFrom(subject)` keeps the messages of the subscription to that subject, or the replies to the requests sent to it:
 ```go
-err := actor.Should(see.The(question.NATSMessages().From("subject")).ShouldHave(been.Received()))
-err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.Received().From("subject")))
+err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages should have been received
+err := actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from "orders" should have been received
+err := actor.Should(see.The(number.Of(question.NATSMessagesFrom("orders"))).Should(be.EqualTo(2)))
+lastOrder, err := actor.AsksFor(last.Of(question.NATSMessagesFrom("orders"))) // lastOrder is a *nats.Msg
+```
+
+### Fake answers
+The `question/fixture` package builds the answer of `NATSConnection` without a server, to test code that receives it:
+```go
+connection := fixture.CreateFakeConnection()             // nothing happened to it
+connection := fixture.CreateFakeClosedConnection()       // disconnected, then closed
+connection := fixture.CreateFakeDisconnectedConnection() // disconnected, not reconnected yet
+connection := fixture.CreateFakeReconnectedConnection()  // disconnected, then reconnected
 ```
 
 ## Testing with an embedded NATS server
@@ -202,7 +218,7 @@ func TestReceivesAPublishedMessage(t *testing.T) {
     ))
 
     require.NoError(t, actor.Should(
-        see.The(question.NATSMessages().From("greetings")).ShouldHave(been.Received()),
+        see.The(question.NATSMessagesFrom("greetings")).ShouldHave(been.Received()),
     ))
 }
 ```

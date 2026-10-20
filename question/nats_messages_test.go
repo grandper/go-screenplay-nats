@@ -2,9 +2,14 @@ package question_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/grandper/go-screenplay/v2/action/see"
+	"github.com/grandper/go-screenplay/v2/question/last"
+	"github.com/grandper/go-screenplay/v2/question/number"
+	"github.com/grandper/go-screenplay/v2/resolution/be"
 	"github.com/grandper/go-screenplay/v2/screenplay"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -14,53 +19,81 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 	"github.com/grandper/go-screenplay-nats/v2/question"
-	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
+)
+
+const (
+	timeout      = 2 * time.Second
+	tickInterval = 100 * time.Millisecond
 )
 
 func TestNATSMessages(t *testing.T) {
-	nc := fixture.CreateEmbeddedNATSServer(t)
-	adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
-	const subject1 = "test-subject-1"
-	const subject2 = "test-subject-2"
-	content1 := []byte("Hello, NATS!")
-	content2 := []byte("Hello, NATS again!")
+	const (
+		orders   = "orders"
+		invoices = "invoices"
+	)
 
-	t.Run("returns all messages", func(t *testing.T) {
-		require.NoError(t, adam.AttemptsTo(subscribe.To(subject1)))
-		require.NoError(t, adam.AttemptsTo(subscribe.To(subject2)))
+	t.Run("answers with the messages received by the actor", func(t *testing.T) {
+		nc := fixture.CreateEmbeddedNATSServer(t)
+		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+		require.NoError(t, adam.AttemptsTo(
+			subscribe.To(orders),
+			subscribe.To(invoices),
+			publish.TheMessage().To(orders).Containing([]byte("1")),
+			receive.TheNextMessageFrom(orders),
+			publish.TheMessage().To(invoices).Containing([]byte("2")),
+			receive.TheNextMessageFrom(invoices),
+			publish.TheMessage().To(orders).Containing([]byte("3")),
+			receive.TheNextMessageFrom(orders),
+		))
 
-		require.NoError(t, adam.AttemptsTo(publish.TheMessage().To(subject1).Containing(content1)))
-		require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject1)))
-		require.NoError(t, adam.AttemptsTo(publish.TheMessage().To(subject2).Containing(content2)))
-		require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject2)))
+		t.Run("all of them, in the order they were received", func(t *testing.T) {
+			messages, err := adam.AsksFor(question.NATSMessages())
 
-		t.Run("returns all messages when no subject is set", func(t *testing.T) {
-			answer, err := adam.AsksFor(question.NATSMessages())
 			require.NoError(t, err)
-			msg := answer
-			require.Len(t, msg, 2)
+			require.Len(t, messages, 3)
+			assert.Equal(t, []byte("1"), messages[0].Data)
+			assert.Equal(t, []byte("2"), messages[1].Data)
+			assert.Equal(t, []byte("3"), messages[2].Data)
 		})
 
-		t.Run("returns all messages for a specific subject", func(t *testing.T) {
-			answer, err := adam.AsksFor(question.NATSMessages().From(subject1))
+		t.Run("those from a subject", func(t *testing.T) {
+			messages, err := adam.AsksFor(question.NATSMessagesFrom(orders))
+
 			require.NoError(t, err)
-			msg := answer
-			require.Len(t, msg, 1)
+			require.Len(t, messages, 2)
+			assert.Equal(t, []byte("1"), messages[0].Data)
+			assert.Equal(t, []byte("3"), messages[1].Data)
+		})
+
+		t.Run("none from a subject nothing was received from", func(t *testing.T) {
+			messages, err := adam.AsksFor(question.NATSMessagesFrom("payments"))
+
+			require.NoError(t, err)
+			assert.Empty(t, messages)
+		})
+
+		t.Run("can be composed with the core questions", func(t *testing.T) {
+			require.NoError(t, adam.Should(see.The(number.Of(question.NATSMessages())).Should(be.EqualTo(3))))
+			lastMessage, err := adam.AsksFor(last.Of(question.NATSMessagesFrom(orders)))
+			require.NoError(t, err)
+			assert.Equal(t, []byte("3"), lastMessage.Data)
 		})
 	})
 
-	t.Run("fails to get the NATS messages if the actor does not have the ability CommunicateWithNATS",
-		func(t *testing.T) {
-			bob := screenplay.ActorNamed("Bob")
-			assert.Error(t, bob.AttemptsTo(see.The(question.NATSMessages()).ShouldHave(been.Received())))
-		},
-	)
+	t.Run("fails when the actor cannot communicate with NATS", func(t *testing.T) {
+		_, err := screenplay.ActorNamed("Adam").AsksFor(question.NATSMessages())
+		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
+		_, err = screenplay.ActorNamed("Adam").AsksFor(question.NATSMessagesFrom(orders))
+		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
+	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {
-		body := question.NATSMessages()
-		assert.Equal(t, "NATS messages", body.String())
+		assert.Equal(t, "NATS messages", question.NATSMessages().String())
+		assert.Equal(t, `NATS messages from "orders"`, question.NATSMessagesFrom(orders).String())
+	})
 
-		body = question.NATSMessages().From(subject1)
-		assert.Equal(t, "NATS messages from test-subject-1", body.String())
+	t.Run("implements the question interface", func(t *testing.T) {
+		assert.Implements(t, (*screenplay.Question[[]*nats.Msg])(nil), question.NATSMessages())
+		assert.Implements(t, (*screenplay.Question[[]*nats.Msg])(nil), question.NATSMessagesFrom(orders))
 	})
 }

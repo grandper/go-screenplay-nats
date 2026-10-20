@@ -40,8 +40,8 @@ func TestTheRequest(t *testing.T) {
 				adam.AttemptsTo(send.TheRequest().To(subject).Containing(content).WithTheHeader("Key", "value")),
 			)
 
-			require.NoError(t, adam.Should(see.The(question.NATSMessages().From(subject)).ShouldHave(been.Received())))
-			replies, err := adam.AsksFor(question.NATSMessages().From(subject))
+			require.NoError(t, adam.Should(see.The(question.NATSMessagesFrom(subject)).ShouldHave(been.Received())))
+			replies, err := adam.AsksFor(question.NATSMessagesFrom(subject))
 			require.NoError(t, err)
 			require.Len(t, replies, 1)
 			assert.Equal(t, []byte("pong"), replies[0].Data)

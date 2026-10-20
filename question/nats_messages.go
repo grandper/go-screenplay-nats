@@ -5,39 +5,46 @@ import (
 	"github.com/nats-io/nats.go"
 
 	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
+	"github.com/grandper/go-screenplay-nats/v2/internal/verdict"
 )
 
-// NATSMessages asks about the NATS messages received by the actor.
-func NATSMessages() *NATSMessagesQuestion {
-	return &NATSMessagesQuestion{}
+// NATSMessages asks for every message the actor received, in the order they
+// were received: the messages of its subscriptions and the replies to its
+// requests.
+func NATSMessages() screenplay.Question[[]*nats.Msg] {
+	return &natsMessagesQuestion{}
 }
 
-// NATSMessagesQuestion asks about the NATS messages received by the actor.
-type NATSMessagesQuestion struct {
-	subject string
+// NATSMessagesFrom asks for the messages the actor received from the subject:
+// those of its subscription to the subject, or the replies to the requests it
+// sent to the subject, in the order they were received.
+func NATSMessagesFrom(subject string) screenplay.Question[[]*nats.Msg] {
+	return &natsMessagesQuestion{subject: subject, fromSubject: true}
 }
 
-// From sets the subject from which to get the messages.
-func (q *NATSMessagesQuestion) From(subject string) *NATSMessagesQuestion {
-	q.subject = subject
-	return q
+// natsMessagesQuestion asks for the messages the actor received.
+type natsMessagesQuestion struct {
+	subject     string
+	fromSubject bool
+}
+
+// AnsweredBy returns the messages the actor received.
+func (q *natsMessagesQuestion) AnsweredBy(theActor *screenplay.Actor) ([]*nats.Msg, error) {
+	if q.fromSubject {
+		return impl.TheAbilityOf(theActor).ToRetrieveMessagesFrom(q.subject)
+	}
+
+	return impl.TheAbilityOf(theActor).ToRetrieveMessages()
 }
 
 // String describes the question.
-func (q *NATSMessagesQuestion) String() string {
-	if q.subject != "" {
-		return "NATS messages from " + q.subject
+func (q *natsMessagesQuestion) String() string {
+	if q.fromSubject {
+		return "NATS messages from " + verdict.Describe(q.subject)
 	}
+
 	return "NATS messages"
 }
 
-// AnsweredBy returns the answer that an actor provided to the question.
-func (q *NATSMessagesQuestion) AnsweredBy(theActor *screenplay.Actor) ([]*nats.Msg, error) {
-	if q.subject == "" {
-		return impl.TheAbilityOf(theActor).ToRetrieveMessages()
-	}
-	return impl.TheAbilityOf(theActor).ToRetrieveMessagesFrom(q.subject)
-}
-
-// NATSMessagesQuestion implements the screenplay.Question interface.
-var _ screenplay.Question[[]*nats.Msg] = (*NATSMessagesQuestion)(nil)
+// natsMessagesQuestion implements the screenplay.Question interface.
+var _ screenplay.Question[[]*nats.Msg] = (*natsMessagesQuestion)(nil)
