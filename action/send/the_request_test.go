@@ -25,8 +25,8 @@ func TestTheRequest(t *testing.T) {
 
 	t.Run("sends a request", func(t *testing.T) {
 		t.Run("and stores the reply", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			sub, err := nc.Subscribe(subject, func(msg *nats.Msg) {
 				assert.Equal(t, content, msg.Data)
 				assert.Equal(t, "value", msg.Header.Get("Key"))
@@ -48,8 +48,8 @@ func TestTheRequest(t *testing.T) {
 		})
 
 		t.Run("fails when the reply does not come in time", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			sub, err := nc.Subscribe(subject, func(_ *nats.Msg) {})
 			require.NoError(t, err)
 			defer func() { assert.NoError(t, sub.Unsubscribe()) }()
@@ -60,8 +60,8 @@ func TestTheRequest(t *testing.T) {
 		})
 
 		t.Run("fails when nobody answers", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.ErrorIs(t, adam.AttemptsTo(send.TheRequest().To(subject)), nats.ErrNoResponders)
 		})
 
@@ -83,7 +83,7 @@ func TestTheRequest(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		nc := fixture.CreateEmbeddedNATSServer(t)
+		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 		adam := internalfixture.NarratedActor("Adam", recorder, nc)
 		sub, err := nc.Subscribe(subject, func(msg *nats.Msg) {
 			assert.NoError(t, msg.Respond([]byte("pong")))

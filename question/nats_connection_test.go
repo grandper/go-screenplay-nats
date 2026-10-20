@@ -15,8 +15,8 @@ import (
 func TestNATSConnection(t *testing.T) {
 	t.Run("answers with what happened to the connection", func(t *testing.T) {
 		t.Run("nothing yet", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			connection, err := adam.AsksFor(question.NATSConnection())
 
@@ -27,8 +27,8 @@ func TestNATSConnection(t *testing.T) {
 		})
 
 		t.Run("the connection was closed", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			nc.Close()
 
 			assert.Eventually(t, func() bool {
@@ -39,8 +39,8 @@ func TestNATSConnection(t *testing.T) {
 		})
 
 		t.Run("the connection was reconnected", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, nc.ForceReconnect())
 
 			assert.Eventually(t, func() bool {

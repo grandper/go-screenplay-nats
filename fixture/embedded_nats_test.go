@@ -12,8 +12,8 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
-func TestCreateEmbeddedNATSServer(t *testing.T) {
-	natsServer := fixture.CreateEmbeddedNATSServer(t)
+func TestConnectToAnEmbeddedNATSServer(t *testing.T) {
+	natsServer := fixture.ConnectToAnEmbeddedNATSServer(t)
 	assert.NotNil(t, natsServer)
 
 	messageReceived := false
@@ -37,15 +37,15 @@ func TestCreateEmbeddedNATSServer(t *testing.T) {
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
-func TestRunNATSServer(t *testing.T) {
-	natsServer := fixture.RunNATSServer(t)
+func TestRunAnEmbeddedNATSServer(t *testing.T) {
+	natsServer := fixture.RunAnEmbeddedNATSServer(t)
 	assert.NotNil(t, natsServer)
 	assert.True(t, natsServer.ReadyForConnections(2*time.Second))
 }
 
-func TestRunNATSServer_MultipleInstancesDoNotConflict(t *testing.T) {
-	server1 := fixture.RunNATSServer(t)
-	server2 := fixture.RunNATSServer(t)
+func TestRunAnEmbeddedNATSServer_MultipleInstancesDoNotConflict(t *testing.T) {
+	server1 := fixture.RunAnEmbeddedNATSServer(t)
+	server2 := fixture.RunAnEmbeddedNATSServer(t)
 	assert.NotNil(t, server1)
 	assert.NotNil(t, server2)
 	assert.NotEqual(t, server1.ClientURL(), server2.ClientURL())

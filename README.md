@@ -1,7 +1,7 @@
 # go-screenplay-nats
 This project is an extension of [go-screenplay](https://github.com/grandper/go-screenplay) to drive a NATS server. It bundles the ability to communicate with NATS together with the actions, questions and resolutions that go with it, so you test a messaging scenario with the same screenplay vocabulary you use everywhere else. A test reads as English, and everything the actor does is narrated:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 err := actor.AttemptsTo(subscribe.To("orders"))
 // NATS User attempts to subscribe to "orders"
@@ -32,12 +32,12 @@ The symbols shown below live in these packages:
 | `question` | `github.com/grandper/go-screenplay-nats/v2/question` | `NATSConnection`, `NATSMessages`, `NATSMessagesFrom` |
 | `fixture` (of `question`) | `github.com/grandper/go-screenplay-nats/v2/question/fixture` | `CreateFakeConnection`, `CreateFakeClosedConnection`, `CreateFakeDisconnectedConnection`, `CreateFakeReconnectedConnection` |
 | `been` | `github.com/grandper/go-screenplay-nats/v2/resolution/been` | `Closed`, `Disconnected`, `Reconnected`, `Received`, `ReceivedFrom` |
-| `fixture` | `github.com/grandper/go-screenplay-nats/v2/fixture` | `CreateEmbeddedNATSServer`, `RunNATSServer` |
+| `fixture` | `github.com/grandper/go-screenplay-nats/v2/fixture` | `ConnectToAnEmbeddedNATSServer`, `RunAnEmbeddedNATSServer` |
 
 Assertions are written with the core screenplay packages (`action/see`, `question/last`, `question/number`, `resolution/be`, ...). The extension's `question` and `fixture` packages share their name with core packages: when a file uses both, keep the core name and alias the extension package with the `nats` prefix.
 
 ## Ability
-This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `Using(nc)`, or the URL of a server with `UsingServerAt("nats://localhost:4222")`.
+This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `UsingTheConnection(nc)`, reading "communicate with NATS using the connection nc", or the URL of a server with `UsingTheServerAt("nats://localhost:4222")`, reading "communicate with NATS using the server at nats://localhost:4222".
 
 First, import the package:
 ```go
@@ -65,17 +65,17 @@ nc, _ := nats.Connect("nats://localhost:4222", nats.UserInfo("username", "passwo
 ```
 Finally, create an actor and give it the `CommunicateWithNATS` ability:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 ```
 Alternatively, let the ability open the connection itself from a server URL. The connection is opened the first time the actor uses the ability, so an unreachable server is reported by the first action, with an error wrapping `ability.ErrFailedToConnect`:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://localhost:4222"))
+actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("nats://localhost:4222"))
 ```
 An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, until it performs the `connect.ToTheNATSServerAt` action.
 
 > **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
 
-`Using` and `UsingServerAt` are the only methods a test can call on the ability. Its operations live in `internal/ability`, so only an action or a question of this package uses them, in one statement written in `PerformAs` or `AnsweredBy` that reads "the ability of the actor to publish":
+`Using` and `UsingTheServerAt` are the only methods a test can call on the ability. Its operations live in `internal/ability`, so only an action or a question of this package uses them, in one statement written in `PerformAs` or `AnsweredBy` that reads "the ability of the actor to publish":
 ```go
 err := impl.TheAbilityOf(theActor).ToPublish(message)
 ```
@@ -250,8 +250,8 @@ Version 2 follows go-screenplay v2 and its guide for writing an extension: a tes
 
 | v1 | v2 |
 |----|----|
-| `ability.CommunicateWithNATS().Using(nc)` | unchanged |
-| `ability.CommunicateWithNATS().UsingServerAt(url)` | unchanged; the connection is opened by the first action |
+| `ability.CommunicateWithNATS().UsingTheConnection(nc)` | unchanged |
+| `ability.CommunicateWithNATS().UsingTheServerAt(url)` | unchanged; the connection is opened by the first action |
 | `ability.Message().To(s).Containing(d).WithHeader(k, v)` | the chain of `publish.TheMessage()` and `send.TheRequest()`, with `WithTheHeader(k, v)` |
 | `action.ConnectToNATS().At(url)` | `connect.ToTheNATSServerAt(url)` |
 | `action.SubscribeTo(s)` and its chain | `subscribe.To(s)` and the same chain |
@@ -266,26 +266,27 @@ Version 2 follows go-screenplay v2 and its guide for writing an extension: a tes
 | `been.Received().From(s)` | `been.ReceivedFrom(s)` |
 | `ability.ErrSubjectIsEmpty`, `ability.ErrQueueIsEmpty`, `action.ErrFailedToConnect` | `action.ErrSubjectIsEmpty`, `action.ErrQueueIsEmpty`, `ability.ErrFailedToConnect` |
 | `ability.ErrMessageIsNil`, `ability.ErrNoMessageForSubject` | gone: no statement can build a nil message |
+| `fixture.CreateEmbeddedNATSServer(t)`, `fixture.RunNATSServer(t)` | `fixture.ConnectToAnEmbeddedNATSServer(t)`, `fixture.RunAnEmbeddedNATSServer(t)` |
 
-Two behaviors changed: `UsingServerAt` no longer connects when the actor is created, so an unreachable server is reported by the first action; and connecting an actor that already holds a connection fails with `ability.ErrAlreadyConnected` instead of being ignored.
+Two behaviors changed: `UsingTheServerAt` no longer connects when the actor is created, so an unreachable server is reported by the first action; and connecting an actor that already holds a connection fails with `ability.ErrAlreadyConnected` instead of being ignored.
 
 ## Testing with an embedded NATS server
-The `fixture` package spins up an in-process NATS server so scenarios can run without an external broker. Both helpers take a `*testing.T` and register their own cleanup, so the server is shut down automatically when the test ends:
+The `fixture` package runs an in-process NATS server so scenarios can run without an external broker. Both helpers take a `*testing.T` and register their own cleanup, so the server is shut down when the test ends:
 ```go
-// Returns a ready-to-use *nats.Conn connected to the embedded server.
-nc := fixture.CreateEmbeddedNATSServer(t)
+// Connects to an embedded server and returns the *nats.Conn.
+nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 
-// Returns the underlying *server.Server if you need to connect several actors
-// or inspect the server directly.
-srv := fixture.RunNATSServer(t)
+// Runs an embedded server and returns the *server.Server, to connect several
+// actors to it or to inspect it directly.
+natsServer := fixture.RunAnEmbeddedNATSServer(t)
 ```
 
 ## Putting it all together
 A complete scenario, from spinning up the embedded server to asserting on received messages:
 ```go
 func TestReceivesAPublishedMessage(t *testing.T) {
-    nc := fixture.CreateEmbeddedNATSServer(t)
-    actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().Using(nc))
+    nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+    actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
     require.NoError(t, actor.AttemptsTo(
         subscribe.To("greetings"),

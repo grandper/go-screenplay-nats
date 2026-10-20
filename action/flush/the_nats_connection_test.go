@@ -18,8 +18,8 @@ import (
 func TestTheNATSConnection(t *testing.T) {
 	t.Run("flushes the connection", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(publish.TheMessage().To("orders")))
 
 			require.NoError(t, adam.AttemptsTo(flush.TheNATSConnection()))
@@ -38,7 +38,7 @@ func TestTheNATSConnection(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		adam := internalfixture.NarratedActor("Adam", recorder, fixture.CreateEmbeddedNATSServer(t))
+		adam := internalfixture.NarratedActor("Adam", recorder, fixture.ConnectToAnEmbeddedNATSServer(t))
 
 		require.NoError(t, adam.AttemptsTo(flush.TheNATSConnection()))
 

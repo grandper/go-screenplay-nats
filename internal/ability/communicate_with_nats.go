@@ -34,11 +34,13 @@ var (
 )
 
 // CommunicateWithNATS enables the actor to communicate with a NATS server. The
-// connection is given with Using, or opened by the ability itself from the URL
-// given with UsingServerAt, reading "communicate with NATS using ...":
+// connection is given with UsingTheConnection, or opened by the ability itself
+// from the URL given with UsingTheServerAt, reading "communicate with NATS
+// using the connection nc" and "communicate with NATS using the server at
+// nats://localhost:4222":
 //
-//	CommunicateWithNATS().Using(nc)
-//	CommunicateWithNATS().UsingServerAt("nats://localhost:4222")
+//	CommunicateWithNATS().UsingTheConnection(nc)
+//	CommunicateWithNATS().UsingTheServerAt("nats://localhost:4222")
 func CommunicateWithNATS() *CommunicateWithNATSAbility {
 	return &CommunicateWithNATSAbility{
 		subscriptions: map[string]*nats.Subscription{},
@@ -73,10 +75,10 @@ type receivedMessage struct {
 	msg     *nats.Msg
 }
 
-// Using provides the NATS connection to the ability; it reads "using nc". A
-// connection already held by the ability is kept, and a nil connection is
-// ignored.
-func (c *CommunicateWithNATSAbility) Using(nc *nats.Conn) *CommunicateWithNATSAbility {
+// UsingTheConnection provides the NATS connection to the ability; it reads
+// "using the connection nc". A connection already held by the ability is
+// kept, and a nil connection is ignored.
+func (c *CommunicateWithNATSAbility) UsingTheConnection(nc *nats.Conn) *CommunicateWithNATSAbility {
 	if c == nil || nc == nil {
 		return c
 	}
@@ -91,11 +93,12 @@ func (c *CommunicateWithNATSAbility) Using(nc *nats.Conn) *CommunicateWithNATSAb
 	return c
 }
 
-// UsingServerAt gives the ability the URL of the NATS server to connect to; it
-// reads "using server at nats://localhost:4222". The connection is opened the
-// first time the ability is used, so that a failure to connect is reported by
-// the action that needed it. A connection already held by the ability is kept.
-func (c *CommunicateWithNATSAbility) UsingServerAt(url string) *CommunicateWithNATSAbility {
+// UsingTheServerAt gives the ability the URL of the NATS server to connect
+// to; it reads "using the server at nats://localhost:4222". The connection is
+// opened the first time the ability is used, so that a failure to connect is
+// reported by the action that needed it. A connection already held by the
+// ability is kept.
+func (c *CommunicateWithNATSAbility) UsingTheServerAt(url string) *CommunicateWithNATSAbility {
 	if c == nil {
 		return c
 	}
@@ -185,11 +188,10 @@ type Operations struct {
 	ability *CommunicateWithNATSAbility
 }
 
-// Subscription describes a subscription to a subject: with a queue group when
-// Queue is set, asynchronous when Asynchronous is set, and unsubscribed after
+// SubscriptionOptions describe a subscription: in a queue group when Queue is
+// set, asynchronous when Asynchronous is set, and unsubscribed after
 // MaxMessages messages when that number is positive.
-type Subscription struct {
-	Subject      string
+type SubscriptionOptions struct {
 	Queue        string
 	Asynchronous bool
 	MaxMessages  int
@@ -278,11 +280,11 @@ func (o *Operations) ToFlush() error {
 	return nc.Flush()
 }
 
-// ToSubscribe subscribes to the subject of the subscription. An asynchronous
+// ToSubscribeTo subscribes to the subject with the options. An asynchronous
 // subscription stores every message it receives; a synchronous one hands its
 // messages to ToReceiveTheNextMessageFrom. When the actor does not have the
 // ability, it fails with screenplay.ErrActorMissingAbility.
-func (o *Operations) ToSubscribe(subscription Subscription) error {
+func (o *Operations) ToSubscribeTo(subject string, options SubscriptionOptions) error {
 	nc, err := o.connection()
 	if err != nil {
 		return err
@@ -292,38 +294,41 @@ func (o *Operations) ToSubscribe(subscription Subscription) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	if _, exists := c.subscriptions[subscription.Subject]; exists {
+	if _, exists := c.subscriptions[subject]; exists {
 		return ErrSubscriptionAlreadyExists
 	}
 
-	sub, err := c.subscribe(nc, subscription)
+	sub, err := c.subscribe(nc, subject, options)
 	if err != nil {
 		return err
 	}
-	c.subscriptions[subscription.Subject] = sub
+	c.subscriptions[subject] = sub
 
-	if subscription.MaxMessages <= 0 {
+	if options.MaxMessages <= 0 {
 		return nil
 	}
 
-	return sub.AutoUnsubscribe(subscription.MaxMessages)
+	return sub.AutoUnsubscribe(options.MaxMessages)
 }
 
 // subscribe creates the subscription on the connection. The state mutex must
 // be held: the handler of an asynchronous subscription locks it only once a
 // message arrives.
-func (c *CommunicateWithNATSAbility) subscribe(nc *nats.Conn, subscription Subscription) (*nats.Subscription, error) {
-	subject := subscription.Subject
+func (c *CommunicateWithNATSAbility) subscribe(
+	nc *nats.Conn,
+	subject string,
+	options SubscriptionOptions,
+) (*nats.Subscription, error) {
 	handler := func(msg *nats.Msg) {
 		c.store(subject, msg)
 	}
 
 	switch {
-	case subscription.Queue != "" && subscription.Asynchronous:
-		return nc.QueueSubscribe(subject, subscription.Queue, handler)
-	case subscription.Queue != "":
-		return nc.QueueSubscribeSync(subject, subscription.Queue)
-	case subscription.Asynchronous:
+	case options.Queue != "" && options.Asynchronous:
+		return nc.QueueSubscribe(subject, options.Queue, handler)
+	case options.Queue != "":
+		return nc.QueueSubscribeSync(subject, options.Queue)
+	case options.Asynchronous:
 		return nc.Subscribe(subject, handler)
 	default:
 		return nc.SubscribeSync(subject)

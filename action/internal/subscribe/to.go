@@ -122,8 +122,7 @@ func (a *ToAction) PerformAs(theActor *screenplay.Actor) error {
 		return action.ErrQueueIsEmpty
 	}
 
-	return impl.TheAbilityOf(theActor).ToSubscribe(impl.Subscription{
-		Subject:      a.subject,
+	return impl.TheAbilityOf(theActor).ToSubscribeTo(a.subject, impl.SubscriptionOptions{
 		Queue:        a.queue,
 		Asynchronous: a.asynchronous,
 		MaxMessages:  a.maxMessages,

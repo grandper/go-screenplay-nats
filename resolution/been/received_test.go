@@ -45,7 +45,7 @@ func TestReceived(t *testing.T) {
 
 	t.Run("reads as a sentence with the question", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		nc := natsfixture.CreateEmbeddedNATSServer(t)
+		nc := natsfixture.ConnectToAnEmbeddedNATSServer(t)
 		adam := internalfixture.NarratedActor("Adam", recorder, nc)
 		require.NoError(t, adam.AttemptsTo(subscribe.To("orders")))
 

@@ -25,8 +25,8 @@ func TestTheNextMessageFrom(t *testing.T) {
 
 	t.Run("receives the next message", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.NoError(t, nc.Publish(subject, content))
 
@@ -39,11 +39,11 @@ func TestTheNextMessageFrom(t *testing.T) {
 		})
 
 		t.Run("waits at most the timeout of the actor", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			production := screenplay.NewProduction(screenplay.WithTimeout(50 * time.Millisecond))
 			adam := production.SetTheStage(screenplay.CastOfStandardActors()).
 				ActorNamed("Adam").
-				WhoCan(ability.CommunicateWithNATS().Using(nc))
+				WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 
 			start := time.Now()
@@ -64,8 +64,8 @@ func TestTheNextMessageFrom(t *testing.T) {
 		})
 
 		t.Run("fails when there is no subscription to the subject", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.ErrorIs(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)), ability.ErrNoSubscriptionFound)
 		})
 
@@ -77,7 +77,7 @@ func TestTheNextMessageFrom(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		nc := fixture.CreateEmbeddedNATSServer(t)
+		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 		adam := internalfixture.NarratedActor("Adam", recorder, nc)
 		require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 		require.NoError(t, nc.Publish(subject, content))

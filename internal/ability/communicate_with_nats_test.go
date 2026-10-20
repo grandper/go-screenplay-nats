@@ -30,42 +30,42 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("is given a connection with Using", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
 
 		t.Run("has no connection until one is given", func(t *testing.T) {
 			require.ErrorIs(t, abilityWithoutConnection().ToFlush(), ability.ErrNATSConnectionNotSet)
 			theAbility := ability.TheAbilityOf(
-				screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nil)),
+				screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nil)),
 			)
 			require.ErrorIs(t, theAbility.ToFlush(), ability.ErrNATSConnectionNotSet)
 		})
 
 		t.Run("keeps the first connection it was given", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			other := fixture.CreateEmbeddedNATSServer(t)
-			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			other := fixture.ConnectToAnEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().UsingTheConnection(nc)
 			theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS))
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 
-			assert.Same(t, communicateWithNATS, communicateWithNATS.Using(other))
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: "other.subject"}))
+			assert.Same(t, communicateWithNATS, communicateWithNATS.UsingTheConnection(other))
+			require.NoError(t, theAbility.ToSubscribeTo("other.subject", ability.SubscriptionOptions{}))
 			assert.Equal(t, 2, nc.NumSubscriptions())
 			assert.Equal(t, 0, other.NumSubscriptions())
 		})
 
 		t.Run("ignores a nil receiver", func(t *testing.T) {
 			var communicateWithNATS *ability.CommunicateWithNATSAbility
-			assert.Nil(t, communicateWithNATS.Using(fixture.CreateEmbeddedNATSServer(t)))
-			assert.Nil(t, communicateWithNATS.UsingServerAt("nats://localhost:4222"))
+			assert.Nil(t, communicateWithNATS.UsingTheConnection(fixture.ConnectToAnEmbeddedNATSServer(t)))
+			assert.Nil(t, communicateWithNATS.UsingTheServerAt("nats://localhost:4222"))
 		})
 	})
 
-	t.Run("is given the URL of a server with UsingServerAt", func(t *testing.T) {
+	t.Run("is given the URL of a server with UsingTheServerAt", func(t *testing.T) {
 		t.Run("connects when it is first used", func(t *testing.T) {
-			natsServer := fixture.RunNATSServer(t)
-			communicateWithNATS := ability.CommunicateWithNATS().UsingServerAt(natsServer.ClientURL())
+			natsServer := fixture.RunAnEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().UsingTheServerAt(natsServer.ClientURL())
 			theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS))
 			assert.Equal(t, 0, natsServer.NumClients())
 
@@ -76,7 +76,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when it is used with an empty URL", func(t *testing.T) {
 			theAbility := ability.TheAbilityOf(
-				screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingServerAt("")),
+				screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("")),
 			)
 			require.ErrorIs(t, theAbility.ToFlush(), ability.ErrNATSConnectionNotSet)
 		})
@@ -84,18 +84,18 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 		t.Run("fails when it is used with an unreachable URL", func(t *testing.T) {
 			theAbility := ability.TheAbilityOf(
 				screenplay.ActorNamed("Adam").
-					WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://invalid:4222")),
+					WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("nats://invalid:4222")),
 			)
 			require.ErrorIs(t, theAbility.ToFlush(), ability.ErrFailedToConnect)
 		})
 
 		t.Run("keeps the connection it was given", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			other := fixture.RunNATSServer(t)
-			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			other := fixture.RunAnEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().UsingTheConnection(nc)
 			theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS))
 
-			assert.Same(t, communicateWithNATS, communicateWithNATS.UsingServerAt(other.ClientURL()))
+			assert.Same(t, communicateWithNATS, communicateWithNATS.UsingTheServerAt(other.ClientURL()))
 			require.NoError(t, theAbility.ToFlush())
 			assert.Equal(t, 0, other.NumClients())
 		})
@@ -103,7 +103,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 	t.Run("connects to a server", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			natsServer := fixture.RunNATSServer(t)
+			natsServer := fixture.RunAnEmbeddedNATSServer(t)
 			theAbility := abilityWithoutConnection()
 			require.NoError(t, theAbility.ToConnectTo(natsServer.ClientURL()))
 			assertEventually(t, func() bool { return natsServer.NumClients() == 1 })
@@ -278,13 +278,13 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the queue is empty", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			err := theAbility.ToSubscribe(ability.Subscription{Subject: subject, Queue: " "})
+			err := theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{Queue: " "})
 			require.ErrorIs(t, err, nats.ErrBadQueueName)
 		})
 
 		t.Run("stores the messages of an asynchronous subscription", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject, Asynchronous: true}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{Asynchronous: true}))
 			require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 
 			assertEventually(t, func() bool {
@@ -297,7 +297,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("unsubscribes from a subject", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
 			require.NoError(t, theAbility.ToUnsubscribeFrom(subject))
@@ -315,7 +315,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the connection was closed", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			nc.Close()
 			require.Error(t, theAbility.ToUnsubscribeFrom(subject))
 		})
@@ -324,7 +324,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("receives the next message from a subject", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			require.NoError(t, nc.Publish(subject, message))
 
 			require.NoError(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
@@ -347,13 +347,13 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the subscription is asynchronous", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject, Asynchronous: true}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{Asynchronous: true}))
 			require.ErrorIs(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject), nats.ErrSyncSubRequired)
 		})
 
 		t.Run("stops when the context ends", func(t *testing.T) {
 			theAbility, _ := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			expiring, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
 			defer cancel()
 
@@ -363,7 +363,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 		t.Run("fails when the connection was closed", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			nc.Close()
 			require.Error(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
 		})
@@ -372,8 +372,8 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 	t.Run("retrieves the messages", func(t *testing.T) {
 		t.Run("in the order they were received, as a copy", func(t *testing.T) {
 			theAbility, nc := connectedAbility(t)
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: "first"}))
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: "second"}))
+			require.NoError(t, theAbility.ToSubscribeTo("first", ability.SubscriptionOptions{}))
+			require.NoError(t, theAbility.ToSubscribeTo("second", ability.SubscriptionOptions{}))
 			require.NoError(t, nc.Publish("first", []byte("1")))
 			require.NoError(t, nc.Publish("second", []byte("2")))
 			require.NoError(t, nc.Publish("first", []byte("3")))
@@ -414,10 +414,10 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 
 	t.Run("forgets its resources", func(t *testing.T) {
 		t.Run("closes the connection and drops the subscriptions and the messages", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			communicateWithNATS := ability.CommunicateWithNATS().UsingTheConnection(nc)
 			theAbility := ability.TheAbilityOf(screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS))
-			require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject}))
+			require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}))
 			require.NoError(t, nc.Publish(subject, message))
 			require.NoError(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
 
@@ -458,7 +458,7 @@ func TestCommunicateWithNATSAbility(t *testing.T) {
 		require.ErrorIs(t, theAbility.ToFlush(), screenplay.ErrActorMissingAbility)
 		require.ErrorIs(
 			t,
-			theAbility.ToSubscribe(ability.Subscription{Subject: subject}),
+			theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{}),
 			screenplay.ErrActorMissingAbility,
 		)
 		require.ErrorIs(t, theAbility.ToUnsubscribeFrom(subject), screenplay.ErrActorMissingAbility)
@@ -482,32 +482,32 @@ func testSubscriptions(ctx context.Context, t *testing.T, message []byte) {
 	t.Helper()
 
 	cases := []struct {
-		name         string
-		subscription ability.Subscription
+		name    string
+		options ability.SubscriptionOptions
 	}{
-		{"synchronously", ability.Subscription{Subject: subject}},
-		{"asynchronously", ability.Subscription{Subject: subject, Asynchronous: true}},
-		{"synchronously with a queue", ability.Subscription{Subject: subject, Queue: queue}},
-		{"asynchronously with a queue", ability.Subscription{Subject: subject, Queue: queue, Asynchronous: true}},
+		{"synchronously", ability.SubscriptionOptions{}},
+		{"asynchronously", ability.SubscriptionOptions{Asynchronous: true}},
+		{"synchronously with a queue", ability.SubscriptionOptions{Queue: queue}},
+		{"asynchronously with a queue", ability.SubscriptionOptions{Queue: queue, Asynchronous: true}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Run("successfully", func(t *testing.T) {
 				theAbility, nc := connectedAbility(t)
-				require.NoError(t, theAbility.ToSubscribe(tc.subscription))
+				require.NoError(t, theAbility.ToSubscribeTo(subject, tc.options))
 				assert.Equal(t, 1, nc.NumSubscriptions())
 			})
 
 			t.Run("unsubscribes after the wanted number of messages", func(t *testing.T) {
 				theAbility, nc := connectedAbility(t)
-				subscription := tc.subscription
-				subscription.MaxMessages = 2
-				require.NoError(t, theAbility.ToSubscribe(subscription))
+				options := tc.options
+				options.MaxMessages = 2
+				require.NoError(t, theAbility.ToSubscribeTo(subject, options))
 
 				for range 3 {
 					require.NoError(t, theAbility.ToPublish(&nats.Msg{Subject: subject, Data: message}))
 				}
-				if !tc.subscription.Asynchronous {
+				if !tc.options.Asynchronous {
 					require.NoError(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
 					require.NoError(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject))
 					require.ErrorIs(t, theAbility.ToReceiveTheNextMessageFrom(ctx, subject), nats.ErrMaxMessages)
@@ -520,29 +520,27 @@ func testSubscriptions(ctx context.Context, t *testing.T, message []byte) {
 
 			t.Run("fails when the subject is empty", func(t *testing.T) {
 				theAbility, _ := connectedAbility(t)
-				subscription := tc.subscription
-				subscription.Subject = ""
-				require.ErrorIs(t, theAbility.ToSubscribe(subscription), nats.ErrBadSubject)
+				require.ErrorIs(t, theAbility.ToSubscribeTo("", tc.options), nats.ErrBadSubject)
 			})
 
 			t.Run("fails when the connection is not set", func(t *testing.T) {
 				require.ErrorIs(
 					t,
-					abilityWithoutConnection().ToSubscribe(tc.subscription),
+					abilityWithoutConnection().ToSubscribeTo(subject, tc.options),
 					ability.ErrNATSConnectionNotSet,
 				)
 			})
 
 			t.Run("fails when the subscription already exists", func(t *testing.T) {
 				theAbility, _ := connectedAbility(t)
-				require.NoError(t, theAbility.ToSubscribe(tc.subscription))
-				require.ErrorIs(t, theAbility.ToSubscribe(tc.subscription), ability.ErrSubscriptionAlreadyExists)
+				require.NoError(t, theAbility.ToSubscribeTo(subject, tc.options))
+				require.ErrorIs(t, theAbility.ToSubscribeTo(subject, tc.options), ability.ErrSubscriptionAlreadyExists)
 			})
 
 			t.Run("fails when the connection is closed", func(t *testing.T) {
 				theAbility, nc := connectedAbility(t)
 				nc.Close()
-				require.Error(t, theAbility.ToSubscribe(tc.subscription))
+				require.Error(t, theAbility.ToSubscribeTo(subject, tc.options))
 			})
 		})
 	}
@@ -554,7 +552,7 @@ func testConcurrentUse(t *testing.T, message []byte) {
 	t.Helper()
 
 	theAbility, _ := connectedAbility(t)
-	require.NoError(t, theAbility.ToSubscribe(ability.Subscription{Subject: subject, Asynchronous: true}))
+	require.NoError(t, theAbility.ToSubscribeTo(subject, ability.SubscriptionOptions{Asynchronous: true}))
 
 	const workers = 10
 	errs := make(chan error, 4*workers)
@@ -588,8 +586,8 @@ func testConcurrentUse(t *testing.T, message []byte) {
 func connectedAbility(t *testing.T) (*ability.Operations, *nats.Conn) {
 	t.Helper()
 
-	nc := fixture.CreateEmbeddedNATSServer(t)
-	adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+	nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+	adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 	t.Cleanup(func() { assert.NoError(t, adam.Exit()) })
 
 	return ability.TheAbilityOf(adam), nc

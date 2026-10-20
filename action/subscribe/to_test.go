@@ -25,8 +25,8 @@ func TestTo(t *testing.T) {
 
 	t.Run("subscribes to a subject", func(t *testing.T) {
 		t.Run("synchronously by default", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 
@@ -36,8 +36,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("synchronously", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).Synchronously()))
 
@@ -46,8 +46,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("asynchronously", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).Asynchronously()))
 
@@ -57,8 +57,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("using a queue", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).UsingTheQueue(queue)))
 
@@ -66,8 +66,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("using a queue asynchronously", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).UsingTheQueue(queue).Asynchronously()))
 
@@ -76,8 +76,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("and unsubscribes after a number of messages", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).AndUnsubscribeAfter(1).Message()))
 
@@ -102,8 +102,8 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("fails when the subscription already exists", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject)), ability.ErrSubscriptionAlreadyExists)
 		})
@@ -116,8 +116,8 @@ func TestTo(t *testing.T) {
 
 	t.Run("subscribes to the subjects starting with a prefix", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.ToTheSubjectStartingWith(subject)))
 
@@ -133,7 +133,7 @@ func TestTo(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		adam := internalfixture.NarratedActor("Adam", recorder, fixture.CreateEmbeddedNATSServer(t))
+		adam := internalfixture.NarratedActor("Adam", recorder, fixture.ConnectToAnEmbeddedNATSServer(t))
 
 		require.NoError(
 			t,

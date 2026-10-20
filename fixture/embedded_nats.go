@@ -12,19 +12,21 @@ import (
 
 const connectionTimeout = 2 * time.Second
 
-// CreateEmbeddedNATSServer creates an embedded NATS server for testing purposes.
-func CreateEmbeddedNATSServer(t *testing.T) *nats.Conn {
+// ConnectToAnEmbeddedNATSServer runs an embedded NATS server, shut down when
+// the test ends, and returns a connection to it.
+func ConnectToAnEmbeddedNATSServer(t *testing.T) *nats.Conn {
 	t.Helper()
 
-	natsServer := RunNATSServer(t)
+	natsServer := RunAnEmbeddedNATSServer(t)
 
 	natsConnection, err := nats.Connect(natsServer.ClientURL())
 	require.NoError(t, err)
 	return natsConnection
 }
 
-// RunNATSServer starts an embedded NATS server for testing purposes.
-func RunNATSServer(t *testing.T) *server.Server {
+// RunAnEmbeddedNATSServer runs an embedded NATS server on a free port, shut
+// down when the test ends, and returns it.
+func RunAnEmbeddedNATSServer(t *testing.T) *server.Server {
 	t.Helper()
 
 	opts := natstest.DefaultTestOptions

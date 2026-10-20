@@ -15,8 +15,8 @@ import (
 
 func TestCommunicateWithNATS(t *testing.T) {
 	t.Run("gives an actor the ability to communicate with NATS using a connection", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 		require.NoError(t, adam.AttemptsTo(subscribe.To("orders")))
 		assert.Equal(t, 1, nc.NumSubscriptions())
@@ -25,9 +25,9 @@ func TestCommunicateWithNATS(t *testing.T) {
 	})
 
 	t.Run("gives an actor the ability to communicate with NATS using a server URL", func(t *testing.T) {
-		natsServer := fixture.RunNATSServer(t)
+		natsServer := fixture.RunAnEmbeddedNATSServer(t)
 		adam := screenplay.ActorNamed("Adam").
-			WhoCan(ability.CommunicateWithNATS().UsingServerAt(natsServer.ClientURL()))
+			WhoCan(ability.CommunicateWithNATS().UsingTheServerAt(natsServer.ClientURL()))
 
 		require.NoError(t, adam.AttemptsTo(flush.TheNATSConnection()))
 		assert.Equal(t, 1, natsServer.NumClients())
@@ -35,7 +35,8 @@ func TestCommunicateWithNATS(t *testing.T) {
 	})
 
 	t.Run("reports an unreachable server when the actor first uses the ability", func(t *testing.T) {
-		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingServerAt("nats://invalid:4222"))
+		adam := screenplay.ActorNamed("Adam").
+			WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("nats://invalid:4222"))
 
 		require.ErrorIs(t, adam.AttemptsTo(flush.TheNATSConnection()), ability.ErrFailedToConnect)
 	})

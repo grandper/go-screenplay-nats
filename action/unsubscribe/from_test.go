@@ -21,8 +21,8 @@ func TestFrom(t *testing.T) {
 
 	t.Run("unsubscribes from a subject", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.Equal(t, 1, nc.NumSubscriptions())
 
@@ -42,8 +42,8 @@ func TestFrom(t *testing.T) {
 		})
 
 		t.Run("fails when there is no subscription to the subject", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			require.ErrorIs(t, adam.AttemptsTo(unsubscribe.From(subject)), ability.ErrNoSubscriptionFound)
 		})
 
@@ -55,7 +55,7 @@ func TestFrom(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		adam := internalfixture.NarratedActor("Adam", recorder, fixture.CreateEmbeddedNATSServer(t))
+		adam := internalfixture.NarratedActor("Adam", recorder, fixture.ConnectToAnEmbeddedNATSServer(t))
 		require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 
 		require.NoError(t, adam.AttemptsTo(unsubscribe.From(subject)))

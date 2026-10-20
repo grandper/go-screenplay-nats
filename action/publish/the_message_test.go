@@ -26,8 +26,8 @@ func TestTheMessage(t *testing.T) {
 
 	t.Run("publishes a message", func(t *testing.T) {
 		t.Run("to a subject", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -41,8 +41,8 @@ func TestTheMessage(t *testing.T) {
 		})
 
 		t.Run("containing a payload, with headers, to be replied to", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -82,7 +82,7 @@ func TestTheMessage(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		adam := internalfixture.NarratedActor("Adam", recorder, fixture.CreateEmbeddedNATSServer(t))
+		adam := internalfixture.NarratedActor("Adam", recorder, fixture.ConnectToAnEmbeddedNATSServer(t))
 
 		require.NoError(t, adam.AttemptsTo(publish.TheMessage().To(subject).Containing(content)))
 

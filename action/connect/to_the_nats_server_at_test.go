@@ -19,7 +19,7 @@ import (
 func TestToTheNATSServerAt(t *testing.T) {
 	t.Run("connects to the NATS server", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
-			natsServer := fixture.RunNATSServer(t)
+			natsServer := fixture.RunAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
 
 			require.NoError(t, adam.AttemptsTo(connect.ToTheNATSServerAt(natsServer.ClientURL())))
@@ -41,8 +41,8 @@ func TestToTheNATSServerAt(t *testing.T) {
 		})
 
 		t.Run("fails when the actor is already connected", func(t *testing.T) {
-			nc := fixture.CreateEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 			err := adam.AttemptsTo(connect.ToTheNATSServerAt(nc.ConnectedUrl()))
 			require.ErrorIs(t, err, ability.ErrAlreadyConnected)
 		})
@@ -55,7 +55,7 @@ func TestToTheNATSServerAt(t *testing.T) {
 
 	t.Run("is narrated", func(t *testing.T) {
 		recorder := screenplayfixture.NewRecorder()
-		natsServer := fixture.RunNATSServer(t)
+		natsServer := fixture.RunAnEmbeddedNATSServer(t)
 		adam := internalfixture.NarratedActor("Adam", recorder, nil)
 
 		require.NoError(t, adam.AttemptsTo(connect.ToTheNATSServerAt(natsServer.ClientURL())))

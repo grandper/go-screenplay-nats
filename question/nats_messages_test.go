@@ -33,8 +33,8 @@ func TestNATSMessages(t *testing.T) {
 	)
 
 	t.Run("answers with the messages received by the actor", func(t *testing.T) {
-		nc := fixture.CreateEmbeddedNATSServer(t)
-		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
+		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
+		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 		require.NoError(t, adam.AttemptsTo(
 			subscribe.To(orders),
 			subscribe.To(invoices),

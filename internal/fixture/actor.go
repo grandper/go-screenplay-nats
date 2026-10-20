@@ -15,5 +15,5 @@ func NarratedActor(name string, recorder *screenplayfixture.Recorder, nc *nats.C
 
 	return production.SetTheStage(screenplay.CastOfStandardActors()).
 		ActorNamed(name).
-		WhoCan(ability.CommunicateWithNATS().Using(nc))
+		WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 }
