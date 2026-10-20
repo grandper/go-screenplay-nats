@@ -1,4 +1,4 @@
-module github.com/grandper/go-screenplay-nats
+module github.com/grandper/go-screenplay-nats/v2
 
 go 1.24.0
 

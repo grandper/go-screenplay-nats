@@ -4,13 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	"github.com/grandper/go-screenplay/resolution/testdata"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestClosedResolution(t *testing.T) {
@@ -21,7 +23,7 @@ func TestClosedResolution(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
 		connection, err := question.NATSConnection().AnsweredBy(adam)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		testdata.AssertMatch(t, been.Closed(), connection)
 	})
@@ -31,7 +33,7 @@ func TestClosedResolution(t *testing.T) {
 		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
 		connection, err := question.NATSConnection().AnsweredBy(adam)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		testdata.AssertNoMatch(t, been.Closed(), connection)
 		testdata.AssertNoMatch(t, been.Closed(), nil)

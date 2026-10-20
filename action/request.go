@@ -3,9 +3,10 @@ package action
 import (
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/grandper/go-screenplay/timing"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // DefaultRequestTimeout is the default timeout for a NATS request.

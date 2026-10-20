@@ -4,16 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	act "github.com/grandper/go-screenplay/action"
 	"github.com/grandper/go-screenplay/action/see"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestReceive(t *testing.T) {
@@ -30,7 +31,10 @@ func TestReceive(t *testing.T) {
 			time.Sleep(waitInterval)
 			require.NoError(t, nc.Publish(subject, content))
 			require.NoError(t, adam.AttemptsTo(action.ReceiveFrom(subject)))
-			require.NoError(t, adam.Should(act.Eventually(see.The(question.NATSMessages().From(subject)).Have(been.Received()))))
+			require.NoError(
+				t,
+				adam.Should(act.Eventually(see.The(question.NATSMessages().From(subject)).Have(been.Received()))),
+			)
 		})
 
 		t.Run("fail the connection is nil", func(t *testing.T) {

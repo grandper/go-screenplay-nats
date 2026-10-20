@@ -3,10 +3,11 @@ package been_test
 import (
 	"testing"
 
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	"github.com/grandper/go-screenplay/resolution/testdata"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestReceivedResolution(t *testing.T) {

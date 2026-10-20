@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 var (

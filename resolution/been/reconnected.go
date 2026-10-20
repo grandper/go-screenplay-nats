@@ -1,8 +1,9 @@
 package been
 
 import (
-	"github.com/grandper/go-screenplay-nats/question"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/question"
 )
 
 // Reconnected is a matcher to tell if the connection has been reconnected at some point.

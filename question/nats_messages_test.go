@@ -3,16 +3,17 @@ package question_test
 import (
 	"testing"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	"github.com/grandper/go-screenplay/action/see"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestNATSMessages(t *testing.T) {

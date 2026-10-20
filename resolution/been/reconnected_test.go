@@ -4,24 +4,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	"github.com/grandper/go-screenplay/resolution/testdata"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestReconnectedResolution(t *testing.T) {
 	t.Run("should match if the connection is reconnected", func(t *testing.T) {
 		nc := fixture.CreateEmbeddedNATSServer(t)
 		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-		assert.NoError(t, nc.ForceReconnect())
+		require.NoError(t, nc.ForceReconnect())
 		time.Sleep(100 * time.Millisecond)
 		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
 		connection, err := question.NATSConnection().AnsweredBy(adam)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		testdata.AssertMatch(t, been.Reconnected(), connection)
 	})
@@ -31,7 +33,7 @@ func TestReconnectedResolution(t *testing.T) {
 		communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 		adam := screenplay.ActorNamed("Adam").WhoCan(communicateWithNATS)
 		connection, err := question.NATSConnection().AnsweredBy(adam)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		testdata.AssertNoMatch(t, been.Reconnected(), connection)
 		testdata.AssertNoMatch(t, been.Reconnected(), nil)

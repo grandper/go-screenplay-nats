@@ -3,8 +3,9 @@ package been
 import (
 	"errors"
 
-	"github.com/grandper/go-screenplay-nats/question"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/question"
 )
 
 var (

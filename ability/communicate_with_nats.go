@@ -99,7 +99,7 @@ func (c *CommunicateWithNATSAbility) setupHandlers() {
 		c.connClosedErr = conn.LastError()
 	})
 
-	c.nc.SetErrorHandler(func(_ *nats.Conn, subscription *nats.Subscription, err error) {
+	c.nc.SetErrorHandler(func(_ *nats.Conn, _ *nats.Subscription, err error) {
 		c.mutex.Lock()
 		defer c.mutex.Unlock()
 		c.asyncErrOccurred = true
@@ -113,7 +113,7 @@ func (c *CommunicateWithNATSAbility) setupHandlers() {
 		c.connDisconnectedErr = err
 	})
 
-	c.nc.SetReconnectHandler(func(conn *nats.Conn) {
+	c.nc.SetReconnectHandler(func(_ *nats.Conn) {
 		c.mutex.Lock()
 		defer c.mutex.Unlock()
 		c.connReconnected = true
@@ -359,7 +359,11 @@ func (c *CommunicateWithNATSAbility) ReceiveNextMessageFor(ctx context.Context, 
 }
 
 // ReceiveAllMessagesFor receives all messages for the specified subject until the context is done.
-func (c *CommunicateWithNATSAbility) ReceiveAllMessagesFor(ctx context.Context, subject string, timeout time.Duration) error {
+func (c *CommunicateWithNATSAbility) ReceiveAllMessagesFor(
+	ctx context.Context,
+	subject string,
+	timeout time.Duration,
+) error {
 	if subject == "" {
 		return ErrSubjectIsEmpty
 	}

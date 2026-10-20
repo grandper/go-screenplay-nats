@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
 )
 
 func TestNATSConnection(t *testing.T) {

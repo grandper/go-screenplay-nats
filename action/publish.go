@@ -1,8 +1,9 @@
 package action
 
 import (
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // PublishAction is an action that publishes a message to a NATS subject.

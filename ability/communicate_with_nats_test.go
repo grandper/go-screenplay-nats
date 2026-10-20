@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
 func TestCommunicateWithNATS(t *testing.T) {
@@ -86,7 +87,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 			assert.False(t, communicateWithNATS.ConnectionWasDisconnected())
 
-			assert.NoError(t, nc.ForceReconnect())
+			require.NoError(t, nc.ForceReconnect())
 			assertEventually(t, func() bool {
 				return nc.IsConnected()
 			})
@@ -98,7 +99,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 			assert.False(t, communicateWithNATS.ConnectionWasReconnected())
 
-			assert.NoError(t, nc.ForceReconnect())
+			require.NoError(t, nc.ForceReconnect())
 			assertEventually(t, func() bool {
 				return nc.IsConnected()
 			})
@@ -115,7 +116,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 			assert.False(t, communicateWithNATS.ConnectionAsyncErrorOccurred())
 
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				require.NoError(t, communicateWithNATS.Publish(ability.Message().To("test").Containing([]byte("msg"))))
 			}
 			require.NoError(t, nc.Flush())
@@ -142,7 +143,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			require.NoError(t, communicateWithNATS.Publish(ability.Message().To(subject).Containing(message)))
 
 			msg, err := sub.NextMsg(testTimeout)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, message, msg.Data)
 			assert.Equal(t, subject, msg.Subject)
 		})
@@ -184,7 +185,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			msg, err := nc.Request("test.subject", message, time.Second)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, []byte("response"), msg.Data)
 		})
 
@@ -236,8 +237,11 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			response, err := communicateWithNATS.Request(ability.Message().To(subject).Containing(message), requestTimeout)
-			assert.NoError(t, err)
+			response, err := communicateWithNATS.Request(
+				ability.Message().To(subject).Containing(message),
+				requestTimeout,
+			)
+			require.NoError(t, err)
 			assert.NotNil(t, response)
 			assert.Equal(t, response.Data, []byte("ok"))
 		})
@@ -247,14 +251,17 @@ func TestCommunicateWithNATS(t *testing.T) {
 			defer nc.Close()
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 			response, err := communicateWithNATS.Request(nil, requestTimeout)
-			assert.ErrorIs(t, err, ability.ErrMessageIsNil)
+			require.ErrorIs(t, err, ability.ErrMessageIsNil)
 			assert.Nil(t, response)
 		})
 
 		t.Run("fails when the connection is nil", func(t *testing.T) {
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nil)
-			response, err := communicateWithNATS.Request(ability.Message().To(subject).Containing(message), requestTimeout)
-			assert.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
+			response, err := communicateWithNATS.Request(
+				ability.Message().To(subject).Containing(message),
+				requestTimeout,
+			)
+			require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 			assert.Nil(t, response)
 		})
 
@@ -262,7 +269,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
 			response, err := communicateWithNATS.Request(ability.Message().Containing(message), requestTimeout)
-			assert.ErrorIs(t, err, ability.ErrSubjectIsEmpty)
+			require.ErrorIs(t, err, ability.ErrSubjectIsEmpty)
 			assert.Nil(t, response)
 		})
 
@@ -270,8 +277,11 @@ func TestCommunicateWithNATS(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			defer nc.Close()
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			response, err := communicateWithNATS.Request(ability.Message().To(subject).Containing(message), requestTimeout)
-			assert.ErrorIs(t, err, nats.ErrNoResponders)
+			response, err := communicateWithNATS.Request(
+				ability.Message().To(subject).Containing(message),
+				requestTimeout,
+			)
+			require.ErrorIs(t, err, nats.ErrNoResponders)
 			assert.Nil(t, response)
 		})
 
@@ -279,7 +289,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			defer nc.Close()
 
-			sub, err := nc.Subscribe(subject, func(msg *nats.Msg) {
+			sub, err := nc.Subscribe(subject, func(_ *nats.Msg) {
 				// No response
 			})
 			require.NoError(t, err)
@@ -304,7 +314,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Equal(t, 0, nc.NumSubscriptions())
 
 			err := communicateWithNATS.SubscribeAsyncTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
@@ -333,18 +343,18 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeAsyncTo(subject, 5)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 1, nc.NumSubscriptions())
 			}
 
 			err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Eventually(t, func() bool {
 				return nc.NumSubscriptions() == 0
 			}, testTimeout, tickInterval)
@@ -376,7 +386,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
 			err := communicateWithNATS.SubscribeAsyncTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = communicateWithNATS.SubscribeAsyncTo(subject, 0)
 			assert.ErrorIs(t, err, ability.ErrSubscriptionAlreadyExists)
@@ -406,7 +416,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Equal(t, 0, nc.NumSubscriptions())
 
 			err := communicateWithNATS.SubscribeTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
@@ -419,15 +429,14 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeTo(subject, 5)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 1, nc.NumSubscriptions())
-
 			}
 			err = communicateWithNATS.ReceiveAllMessages(context.Background(), 200*time.Millisecond)
 			require.ErrorIs(t, err, nats.ErrMaxMessages)
@@ -462,7 +471,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
 			err := communicateWithNATS.SubscribeTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = communicateWithNATS.SubscribeTo(subject, 0)
 			assert.ErrorIs(t, err, ability.ErrSubscriptionAlreadyExists)
@@ -492,7 +501,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Equal(t, 0, nc.NumSubscriptions())
 
 			err := communicateWithNATS.SubscribeToQueueAsync(subject, queue, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
@@ -505,18 +514,18 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeToQueueAsync(subject, queue, 5)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 1, nc.NumSubscriptions())
 			}
 
 			err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Eventually(t, func() bool {
 				return nc.NumSubscriptions() == 0
 			}, testTimeout, tickInterval)
@@ -558,7 +567,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
 			err := communicateWithNATS.SubscribeToQueueAsync(subject, queue, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = communicateWithNATS.SubscribeToQueueAsync(subject, queue, 0)
 			assert.ErrorIs(t, err, ability.ErrSubscriptionAlreadyExists)
@@ -588,7 +597,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			assert.Equal(t, 0, nc.NumSubscriptions())
 
 			err := communicateWithNATS.SubscribeToQueue(subject, queue, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 		})
@@ -601,15 +610,14 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeToQueue(subject, queue, 5)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				err = communicateWithNATS.Publish(ability.Message().To(subject).Containing([]byte("msg")))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, 1, nc.NumSubscriptions())
-
 			}
 			err = communicateWithNATS.ReceiveAllMessages(context.Background(), 200*time.Millisecond)
 			require.ErrorIs(t, err, nats.ErrMaxMessages)
@@ -654,7 +662,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
 			err := communicateWithNATS.SubscribeToQueue(subject, queue, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = communicateWithNATS.SubscribeToQueue(subject, queue, 0)
 			assert.ErrorIs(t, err, ability.ErrSubscriptionAlreadyExists)
@@ -682,11 +690,11 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeAsyncTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
 			err = communicateWithNATS.UnsubscribeFrom(subject)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, 0, nc.NumSubscriptions())
 		})
 
@@ -730,7 +738,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			}()
 
 			err := communicateWithNATS.SubscribeAsyncTo(subject, 0)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, 1, nc.NumSubscriptions())
 
 			nc.Close()
@@ -752,7 +760,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 
 			assert.NoError(t, communicateWithNATS.ReceiveNextMessageFor(ctx, subject))
 			msg, err := communicateWithNATS.LastMessageForSubject(subject)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, []byte("hello world"), msg.Data)
 		})
 
@@ -798,7 +806,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 
 			assert.NoError(t, communicateWithNATS.ReceiveAllMessagesFor(ctx, subject, timeout))
 			msgs, err := communicateWithNATS.AllMessagesForSubject(subject)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, msgs, 2)
 		})
 
@@ -810,13 +818,21 @@ func TestCommunicateWithNATS(t *testing.T) {
 
 		t.Run("fails then the connection is nil", func(t *testing.T) {
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nil)
-			assert.ErrorIs(t, communicateWithNATS.ReceiveAllMessagesFor(ctx, subject, timeout), ability.ErrNATSConnectionNotSet)
+			assert.ErrorIs(
+				t,
+				communicateWithNATS.ReceiveAllMessagesFor(ctx, subject, timeout),
+				ability.ErrNATSConnectionNotSet,
+			)
 		})
 
 		t.Run("fails when there is no subscription for the subject", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			assert.ErrorIs(t, communicateWithNATS.ReceiveAllMessagesFor(ctx, subject, timeout), ability.ErrNoSubscriptionFound)
+			assert.ErrorIs(
+				t,
+				communicateWithNATS.ReceiveAllMessagesFor(ctx, subject, timeout),
+				ability.ErrNoSubscriptionFound,
+			)
 		})
 
 		t.Run("fails when the connection was closed", func(t *testing.T) {
@@ -844,7 +860,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 
 			assert.NoError(t, communicateWithNATS.ReceiveAllMessages(ctx, timeout))
 			msgs, err := communicateWithNATS.AllMessagesForSubject(subject)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, msgs, 2)
 		})
 
@@ -870,7 +886,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			defer nc.Close()
 
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			assert.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
+			require.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
 			defer func() {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
@@ -919,7 +935,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			defer nc.Close()
 
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			assert.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
+			require.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
 			defer func() {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
@@ -982,7 +998,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 			defer nc.Close()
 
 			communicateWithNATS := ability.CommunicateWithNATS().Using(nc)
-			assert.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
+			require.NoError(t, communicateWithNATS.SubscribeTo(subject, 0))
 			defer func() {
 				assert.NoError(t, communicateWithNATS.Forget())
 			}()
@@ -1006,7 +1022,7 @@ func TestCommunicateWithNATS(t *testing.T) {
 const testTimeout = 2 * time.Second
 const tickInterval = 100 * time.Millisecond
 
-func assertEventually(t *testing.T, condition func() bool) bool {
+func assertEventually(t *testing.T, condition func() bool) {
 	t.Helper()
-	return assert.Eventually(t, condition, testTimeout, tickInterval)
+	assert.Eventually(t, condition, testTimeout, tickInterval)
 }

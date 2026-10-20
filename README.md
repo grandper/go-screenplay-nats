@@ -7,7 +7,7 @@ In this document, we describe how to develop NATS scenarios using the Screenplay
 
 ## Installation
 ```sh
-go get github.com/grandper/go-screenplay-nats
+go get github.com/grandper/go-screenplay-nats/v2
 ```
 
 ## Ability
@@ -19,11 +19,11 @@ import (
     "github.com/nats-io/nats.go"
     "github.com/grandper/go-screenplay/screenplay"
     "github.com/grandper/go-screenplay/action/see"
-    "github.com/grandper/go-screenplay-nats/ability"
-    "github.com/grandper/go-screenplay-nats/action"
-    "github.com/grandper/go-screenplay-nats/fixture"
-    "github.com/grandper/go-screenplay-nats/question"
-    "github.com/grandper/go-screenplay-nats/resolution/been"
+    "github.com/grandper/go-screenplay-nats/v2/ability"
+    "github.com/grandper/go-screenplay-nats/v2/action"
+    "github.com/grandper/go-screenplay-nats/v2/fixture"
+    "github.com/grandper/go-screenplay-nats/v2/question"
+    "github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 ```
 Then create a connection to the NATS server:

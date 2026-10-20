@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
 func TestCreateEmbeddedNATSServer(t *testing.T) {

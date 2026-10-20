@@ -3,12 +3,13 @@ package action_test
 import (
 	"testing"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
 func TestUnsubscribeFrom(t *testing.T) {
@@ -43,7 +44,11 @@ func TestUnsubscribeFrom(t *testing.T) {
 		t.Run("fails when no subscription exists for the subject", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
-			require.ErrorIs(t, adam.AttemptsTo(action.UnsubscribeFrom("non.existent.subject")), ability.ErrNoSubscriptionFound)
+			require.ErrorIs(
+				t,
+				adam.AttemptsTo(action.UnsubscribeFrom("non.existent.subject")),
+				ability.ErrNoSubscriptionFound,
+			)
 		})
 	})
 

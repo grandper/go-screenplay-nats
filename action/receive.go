@@ -3,8 +3,9 @@ package action
 import (
 	"context"
 
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // ReceiveAction is an action that receives a message from a NATS subject.

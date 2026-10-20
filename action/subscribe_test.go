@@ -4,13 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
 func TestSubscribeTo(t *testing.T) {
@@ -115,9 +116,17 @@ func TestSubscribeTo(t *testing.T) {
 		assert.Equal(t, "subscribe to NATS subject test.subject synchronously using queue test.queue", action4.String())
 
 		action5 := action.SubscribeTo(subject).AndUnsubscribeAfter(4).Messages()
-		assert.Equal(t, "subscribe to NATS subject test.subject synchronously and unsubscribe after 4 messages", action5.String())
+		assert.Equal(
+			t,
+			"subscribe to NATS subject test.subject synchronously and unsubscribe after 4 messages",
+			action5.String(),
+		)
 
 		action6 := action.SubscribeTo(subject).AndUnsubscribeAfter(1).Message()
-		assert.Equal(t, "subscribe to NATS subject test.subject synchronously and unsubscribe after 1 message", action6.String())
+		assert.Equal(
+			t,
+			"subscribe to NATS subject test.subject synchronously and unsubscribe after 1 message",
+			action6.String(),
+		)
 	})
 }

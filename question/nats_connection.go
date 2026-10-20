@@ -1,8 +1,9 @@
 package question
 
 import (
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // NATSConnection asks about the connection to NATS.

@@ -3,8 +3,9 @@ package action
 import (
 	"fmt"
 
-	"github.com/grandper/go-screenplay-nats/ability"
 	"github.com/grandper/go-screenplay/screenplay"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // SubscribeToAction is an action to subscribe to a NATS subject.

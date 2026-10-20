@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
 )
 
 func TestPublish(t *testing.T) {

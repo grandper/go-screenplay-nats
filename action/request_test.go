@@ -4,17 +4,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/grandper/go-screenplay-nats/ability"
-	"github.com/grandper/go-screenplay-nats/action"
-	"github.com/grandper/go-screenplay-nats/fixture"
-	"github.com/grandper/go-screenplay-nats/question"
-	"github.com/grandper/go-screenplay-nats/resolution/been"
 	act "github.com/grandper/go-screenplay/action"
 	"github.com/grandper/go-screenplay/action/see"
 	"github.com/grandper/go-screenplay/screenplay"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/action"
+	"github.com/grandper/go-screenplay-nats/v2/fixture"
+	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
 func TestRequest(t *testing.T) {
@@ -58,7 +59,7 @@ func TestRequest(t *testing.T) {
 		t.Run("fails when the response is not fast enough", func(t *testing.T) {
 			var mutex sync.Mutex
 			messageReceived := false
-			sub, err := nc.Subscribe(subject, func(msg *nats.Msg) {
+			sub, err := nc.Subscribe(subject, func(_ *nats.Msg) {
 				mutex.Lock()
 				defer mutex.Unlock()
 				messageReceived = true
