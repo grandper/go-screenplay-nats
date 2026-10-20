@@ -4,7 +4,7 @@ import (
 	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/nats-io/nats.go"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // NATSMessages asks about the NATS messages received by the actor.
@@ -33,11 +33,10 @@ func (q *NATSMessagesQuestion) String() string {
 
 // AnsweredBy returns the answer that an actor provided to the question.
 func (q *NATSMessagesQuestion) AnsweredBy(theActor *screenplay.Actor) ([]*nats.Msg, error) {
-	theActorCommunicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
 	if q.subject == "" {
-		return theActorCommunicateWithNATS.AllMessages()
+		return impl.TheAbilityOf(theActor).ToRetrieveMessages()
 	}
-	return theActorCommunicateWithNATS.AllMessagesForSubject(q.subject)
+	return impl.TheAbilityOf(theActor).ToRetrieveMessagesFrom(q.subject)
 }
 
 // NATSMessagesQuestion implements the screenplay.Question interface.

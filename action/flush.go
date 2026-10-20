@@ -3,7 +3,7 @@ package action
 import (
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // FlushAction is an action that forces a flush on the NATS connection.
@@ -16,8 +16,7 @@ func Flush() *FlushAction {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *FlushAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
-	return communicateWithNATS.Flush()
+	return impl.TheAbilityOf(theActor).ToFlush()
 }
 
 // String returns a string representation of the action.

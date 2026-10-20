@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 func TestMessage(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // PublishAction is an action that publishes a message to a NATS subject.
@@ -20,8 +21,10 @@ func Publish(message *ability.NATSMessage) *PublishAction {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *PublishAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
-	return communicateWithNATS.Publish(a.message)
+	if a.message != nil && a.message.Subject() == "" {
+		return ErrSubjectIsEmpty
+	}
+	return impl.TheAbilityOf(theActor).ToPublish(a.message)
 }
 
 // String returns a string representation of the action.

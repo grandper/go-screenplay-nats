@@ -1,15 +1,10 @@
 package action
 
 import (
-	"errors"
-
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
-
-// ErrURLIsEmpty is returned when the URL for the NATS connection is empty.
-var ErrURLIsEmpty = errors.New("the URL for the NATS connection cannot be empty")
 
 // ConnectToNATSAction is an action to connect to a NATS server.
 type ConnectToNATSAction struct {
@@ -29,14 +24,10 @@ func (a *ConnectToNATSAction) At(url string) *ConnectToNATSAction {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *ConnectToNATSAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
-	if communicateWithNATS == nil {
-		return screenplay.ErrActorMissingAbility
-	}
 	if a.url == "" {
 		return ErrURLIsEmpty
 	}
-	return communicateWithNATS.ConnectTo(a.url)
+	return impl.TheAbilityOf(theActor).ToConnectTo(a.url)
 }
 
 // String returns a string representation of the action.

@@ -5,7 +5,7 @@ import (
 
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // Reconnected is a resolution to tell if the connection has been reconnected at some point.
@@ -17,7 +17,7 @@ func Reconnected() *ReconnectedResolution {
 type ReconnectedResolution struct{}
 
 // Inspect returns nil when the connection has been reconnected, and an error otherwise.
-func (r *ReconnectedResolution) Inspect(connection *question.Connection) error {
+func (r *ReconnectedResolution) Inspect(connection *ability.Connection) error {
 	if connection == nil {
 		return errors.New("the connection is nil")
 	}
@@ -33,4 +33,4 @@ func (r *ReconnectedResolution) String() string {
 }
 
 // ReconnectedResolution implements the screenplay.Resolution interface.
-var _ screenplay.Resolution[*question.Connection] = (*ReconnectedResolution)(nil)
+var _ screenplay.Resolution[*ability.Connection] = (*ReconnectedResolution)(nil)

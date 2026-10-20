@@ -47,7 +47,7 @@ func TestSubscribeTo(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is not provided", func(t *testing.T) {
-			require.ErrorIs(t, adam.AttemptsTo(action.SubscribeTo("")), ability.ErrSubjectIsEmpty)
+			require.ErrorIs(t, adam.AttemptsTo(action.SubscribeTo("")), action.ErrSubjectIsEmpty)
 		})
 	})
 

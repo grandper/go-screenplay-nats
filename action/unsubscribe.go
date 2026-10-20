@@ -3,7 +3,7 @@ package action
 import (
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // UnsubscribeFromAction is an action to unsubscribe from a NATS subject.
@@ -20,11 +20,10 @@ func UnsubscribeFrom(subject string) *UnsubscribeFromAction {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *UnsubscribeFromAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
 	if a.subject == "" {
-		return ability.ErrSubjectIsEmpty
+		return ErrSubjectIsEmpty
 	}
-	return communicateWithNATS.UnsubscribeFrom(a.subject)
+	return impl.TheAbilityOf(theActor).ToUnsubscribeFrom(a.subject)
 }
 
 // String returns a string representation of the action.

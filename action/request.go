@@ -7,6 +7,7 @@ import (
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // DefaultRequestTimeout is the default timeout for a NATS request.
@@ -39,9 +40,10 @@ func (a *RequestAction) For(value int) *timing.DurationBuilder[RequestAction] {
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *RequestAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
-	_, err := communicateWithNATS.Request(a.message, a.timeout)
-	return err
+	if a.message != nil && a.message.Subject() == "" {
+		return ErrSubjectIsEmpty
+	}
+	return impl.TheAbilityOf(theActor).ToSendTheRequest(theActor.Context(), a.message, a.timeout)
 }
 
 // String returns a string representation of the action.

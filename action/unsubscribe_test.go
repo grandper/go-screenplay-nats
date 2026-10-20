@@ -38,7 +38,7 @@ func TestUnsubscribeFrom(t *testing.T) {
 		t.Run("fails when the subject is not provided", func(t *testing.T) {
 			nc := fixture.CreateEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().Using(nc))
-			require.ErrorIs(t, adam.AttemptsTo(action.UnsubscribeFrom("")), ability.ErrSubjectIsEmpty)
+			require.ErrorIs(t, adam.AttemptsTo(action.UnsubscribeFrom("")), action.ErrSubjectIsEmpty)
 		})
 
 		t.Run("fails when no subscription exists for the subject", func(t *testing.T) {

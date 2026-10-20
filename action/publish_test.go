@@ -62,7 +62,7 @@ func TestPublish(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is not provided", func(t *testing.T) {
-			require.ErrorIs(t, adam.AttemptsTo(action.Publish(ability.Message())), ability.ErrSubjectIsEmpty)
+			require.ErrorIs(t, adam.AttemptsTo(action.Publish(ability.Message())), action.ErrSubjectIsEmpty)
 		})
 	})
 

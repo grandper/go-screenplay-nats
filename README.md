@@ -43,6 +43,12 @@ An actor without a connection or a URL fails every action with `ability.ErrNATSC
 
 > **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
 
+`Using` and `UsingServerAt` are the only methods a test can call on the ability. Its operations live in `internal/ability`, so only an action or a question of this package uses them, in one statement written in `PerformAs` or `AnsweredBy` that reads "the ability of the actor to publish":
+```go
+err := impl.TheAbilityOf(theActor).ToPublish(message)
+```
+`TheAbilityOf` never fails: when the actor cannot communicate with NATS, the operation reports `screenplay.ErrActorMissingAbility`.
+
 You can of course use all the available options when creating the NATS connection, see [NATS Go client](https://github.com/nats-io/nats.go) for more details.
 
 ## Actions
@@ -59,6 +65,8 @@ The `SubscribeTo` action allows an actor to subscribe to a NATS subject without 
 ```go
 err := actor.AttemptsTo(action.SubscribeTo("foobar"))
 ```
+An empty subject is reported when the actor performs the action, with `action.ErrSubjectIsEmpty`; so is an empty queue, with `action.ErrQueueIsEmpty`.
+
 You can of course use wildcards to match any token at any level of the subject:
 ```go
 err := actor.AttemptsTo(action.SubscribeTo("foo.*.baz"))
@@ -126,7 +134,7 @@ err := actor.AttemptsTo(action.Request(message).For(500).Milliseconds())
 ```
 
 ### ReceiveFrom
-The `ReceiveFrom` action makes an actor receive the next message from a subject it has subscribed to. The received message is stored and can later be retrieved with the `NATSMessages` question. It can be used as follows:
+The `ReceiveFrom` action makes an actor receive the next message from a subject it has subscribed to synchronously. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`). The received message is stored and can later be retrieved with the `NATSMessages` question. It can be used as follows:
 ```go
 err := actor.AttemptsTo(action.ReceiveFrom("subject"))
 ```
@@ -140,7 +148,7 @@ err := actor.AttemptsTo(action.Flush())
 ## Questions
 
 ### NATSConnection
-The `NATSConnection` question allows an actor to retrieve the underlying NATS connection. It can be used as follows:
+The `NATSConnection` question answers with an `*ability.Connection`, a snapshot of what happened to the connection of the actor, read through `WasClosed()`, `WasDisconnected()` and `WasReconnected()`. It is taken when the question is answered and does not change afterwards, so ask the question again to observe a later state. It can be used as follows:
 ```go
 err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
 err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Disconnected()))
@@ -148,7 +156,7 @@ err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Reconnect
 ```
 
 ### NATSMessages
-The `NATSMessages` question allows an actor to retrieve all messages received on a specific NATS subject. It can be used as follows:
+The `NATSMessages` question answers with the `[]*nats.Msg` received by the actor, in the order they were received: the messages of its subscriptions and the replies to its requests. `From(subject)` keeps the messages of the subscription to that subject, or the replies to the requests sent to it. It can be used as follows:
 ```go
 err := actor.Should(see.The(question.NATSMessages().From("subject")).ShouldHave(been.Received()))
 err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.Received().From("subject")))

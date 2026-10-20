@@ -5,7 +5,7 @@ import (
 
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	impl "github.com/grandper/go-screenplay-nats/v2/internal/ability"
 )
 
 // SubscribeToAction is an action to subscribe to a NATS subject.
@@ -75,20 +75,15 @@ func (a *SubscribeToAction) AndUnsubscribeAfter(maxWantedMessages int) *Subscrib
 
 // PerformAs performs the task or the action as the provided actor.
 func (a *SubscribeToAction) PerformAs(theActor *screenplay.Actor) error {
-	communicateWithNATS := screenplay.UseAnAbilityOf(theActor).That(ability.CommunicateWithNATS())
 	if a.subject == "" {
-		return ability.ErrSubjectIsEmpty
+		return ErrSubjectIsEmpty
 	}
-	if a.queue != "" {
-		if a.synchronous {
-			return communicateWithNATS.SubscribeToQueue(a.subject, a.queue, a.maxWantedMessages)
-		}
-		return communicateWithNATS.SubscribeToQueueAsync(a.subject, a.queue, a.maxWantedMessages)
-	}
-	if a.synchronous {
-		return communicateWithNATS.SubscribeTo(a.subject, a.maxWantedMessages)
-	}
-	return communicateWithNATS.SubscribeAsyncTo(a.subject, a.maxWantedMessages)
+	return impl.TheAbilityOf(theActor).ToSubscribe(impl.Subscription{
+		Subject:      a.subject,
+		Queue:        a.queue,
+		Asynchronous: !a.synchronous,
+		MaxMessages:  a.maxWantedMessages,
+	})
 }
 
 // String returns a string representation of the action.

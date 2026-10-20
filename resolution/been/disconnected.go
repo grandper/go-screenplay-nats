@@ -5,7 +5,7 @@ import (
 
 	"github.com/grandper/go-screenplay/v2/screenplay"
 
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/ability"
 )
 
 // Disconnected is a resolution to tell if the connection has been disconnected at some point.
@@ -17,7 +17,7 @@ func Disconnected() *DisconnectedResolution {
 type DisconnectedResolution struct{}
 
 // Inspect returns nil when the connection has been disconnected, and an error otherwise.
-func (r *DisconnectedResolution) Inspect(connection *question.Connection) error {
+func (r *DisconnectedResolution) Inspect(connection *ability.Connection) error {
 	if connection == nil {
 		return errors.New("the connection is nil")
 	}
@@ -33,4 +33,4 @@ func (r *DisconnectedResolution) String() string {
 }
 
 // DisconnectedResolution implements the screenplay.Resolution interface.
-var _ screenplay.Resolution[*question.Connection] = (*DisconnectedResolution)(nil)
+var _ screenplay.Resolution[*ability.Connection] = (*DisconnectedResolution)(nil)
