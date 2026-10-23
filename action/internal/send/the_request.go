@@ -19,8 +19,8 @@ const defaultTimeout = 5 * time.Second
 // TheRequest sends a request holding the text to the subject given with To
 // and waits for its reply, at most five seconds unless TimingOutAfter is
 // written; it reads "send the request ping to orders timing out after 2
-// seconds". The reply is stored under the subject of the request, where the
-// question NATSMessagesFrom finds it:
+// seconds". The reply is stored under the subject of the request, where
+// messages.FromTheSubject finds it:
 //
 //	send.TheRequest("ping").To("orders")
 //	send.TheRequest("ping").To("orders").WithTheHeader("Key", "value").TimingOutAfter(2).Seconds()

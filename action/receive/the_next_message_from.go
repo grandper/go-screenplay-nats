@@ -11,7 +11,7 @@ import (
 )
 
 // TheNextMessageFrom receives the next message of the synchronous subscription
-// to the subject and stores it, where the question NATSMessagesFrom finds it.
+// to the subject and stores it, where messages.FromTheSubject finds it.
 // The actor waits at most its timeout (see screenplay.WithTimeout). It fails
 // with action.ErrSubjectIsEmpty when the subject is empty, and with an error
 // wrapping ability.ErrNoSubscriptionFound when the actor did not subscribe to

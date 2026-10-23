@@ -15,7 +15,7 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/action/send"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 	internalfixture "github.com/grandper/go-screenplay-nats/v2/internal/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/question/messages"
 	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
@@ -43,8 +43,8 @@ func TestTheRequest(t *testing.T) {
 				send.TheRequest(text).To(subject).WithTheHeader("Key", "value").WithTheHeaders("Other", "1"),
 			))
 
-			require.NoError(t, adam.Should(see.The(question.NATSMessagesFrom(subject)).ShouldHave(been.Received())))
-			replies, err := adam.AsksFor(question.NATSMessagesFrom(subject))
+			require.NoError(t, adam.Should(see.The(messages.FromTheSubject(subject)).ShouldHave(been.Received())))
+			replies, err := adam.AsksFor(messages.FromTheSubject(subject))
 			require.NoError(t, err)
 			require.Len(t, replies, 1)
 			assert.Equal(t, []byte("pong"), replies[0].Data)

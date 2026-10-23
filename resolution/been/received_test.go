@@ -15,7 +15,7 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	natsfixture "github.com/grandper/go-screenplay-nats/v2/fixture"
 	internalfixture "github.com/grandper/go-screenplay-nats/v2/internal/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/question/messages"
 	"github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 
@@ -49,22 +49,22 @@ func TestReceived(t *testing.T) {
 		adam := internalfixture.NarratedActor("Adam", recorder, nc)
 		require.NoError(t, adam.AttemptsTo(subscribe.To("orders")))
 
-		err := adam.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
+		err := adam.Should(see.The(messages.FromTheSubject("orders")).ShouldHave(been.Received()))
 		require.EqualError(
 			t,
 			err,
-			`Adam failed to see that the NATS messages from "orders" should have been received: no message has been received`,
+			`Adam failed to see that the NATS messages from the subject "orders" should have been received: no message has been received`,
 		)
 
 		require.NoError(t, adam.AttemptsTo(
 			publish.TheMessage("Hello").To("orders"),
 			receive.TheNextMessageFrom("orders"),
 		))
-		require.NoError(t, adam.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFrom("orders"))))
+		require.NoError(t, adam.Should(see.The(messages.FromAnySubject()).ShouldHave(been.ReceivedFrom("orders"))))
 		assert.Contains(
 			t,
 			recorder.Messages(),
-			`Adam should see that the NATS messages should have been received from "orders"`,
+			`Adam should see that the NATS messages from any subject should have been received from "orders"`,
 		)
 	})
 

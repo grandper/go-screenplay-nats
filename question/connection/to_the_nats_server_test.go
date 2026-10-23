@@ -1,7 +1,8 @@
-package question_test
+package connection_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/grandper/go-screenplay/v2/screenplay"
 	"github.com/stretchr/testify/assert"
@@ -9,21 +10,26 @@ import (
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/question/connection"
 )
 
-func TestNATSConnection(t *testing.T) {
+const (
+	timeout      = 2 * time.Second
+	tickInterval = 100 * time.Millisecond
+)
+
+func TestToTheNATSServer(t *testing.T) {
 	t.Run("answers with what happened to the connection", func(t *testing.T) {
 		t.Run("nothing yet", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
-			connection, err := adam.AsksFor(question.NATSConnection())
+			answer, err := adam.AsksFor(connection.ToTheNATSServer())
 
 			require.NoError(t, err)
-			assert.False(t, connection.WasClosed())
-			assert.False(t, connection.WasDisconnected())
-			assert.False(t, connection.WasReconnected())
+			assert.False(t, answer.WasClosed())
+			assert.False(t, answer.WasDisconnected())
+			assert.False(t, answer.WasReconnected())
 		})
 
 		t.Run("the connection was closed", func(t *testing.T) {
@@ -32,9 +38,8 @@ func TestNATSConnection(t *testing.T) {
 			nc.Close()
 
 			assert.Eventually(t, func() bool {
-				connection, err := adam.AsksFor(question.NATSConnection())
-				return err == nil && connection.WasClosed() && connection.WasDisconnected() &&
-					!connection.WasReconnected()
+				answer, err := adam.AsksFor(connection.ToTheNATSServer())
+				return err == nil && answer.WasClosed() && answer.WasDisconnected() && !answer.WasReconnected()
 			}, timeout, tickInterval)
 		})
 
@@ -44,29 +49,28 @@ func TestNATSConnection(t *testing.T) {
 			require.NoError(t, nc.ForceReconnect())
 
 			assert.Eventually(t, func() bool {
-				connection, err := adam.AsksFor(question.NATSConnection())
-				return err == nil && !connection.WasClosed() && connection.WasDisconnected() &&
-					connection.WasReconnected()
+				answer, err := adam.AsksFor(connection.ToTheNATSServer())
+				return err == nil && !answer.WasClosed() && answer.WasDisconnected() && answer.WasReconnected()
 			}, timeout, tickInterval)
 		})
 	})
 
 	t.Run("fails when the actor cannot communicate with NATS", func(t *testing.T) {
-		_, err := screenplay.ActorNamed("Adam").AsksFor(question.NATSConnection())
+		_, err := screenplay.ActorNamed("Adam").AsksFor(connection.ToTheNATSServer())
 		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
 	})
 
 	t.Run("fails when the connection is not set", func(t *testing.T) {
 		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
-		_, err := adam.AsksFor(question.NATSConnection())
+		_, err := adam.AsksFor(connection.ToTheNATSServer())
 		require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {
-		assert.Equal(t, "NATS connection", question.NATSConnection().String())
+		assert.Equal(t, "connection to the NATS server", connection.ToTheNATSServer().String())
 	})
 
 	t.Run("implements the question interface", func(t *testing.T) {
-		assert.Implements(t, (*screenplay.Question[*ability.Connection])(nil), question.NATSConnection())
+		assert.Implements(t, (*screenplay.Question[*ability.Connection])(nil), connection.ToTheNATSServer())
 	})
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 	internalfixture "github.com/grandper/go-screenplay-nats/v2/internal/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/question/messages"
 )
 
 func TestTheNextMessageFrom(t *testing.T) {
@@ -32,7 +32,7 @@ func TestTheNextMessageFrom(t *testing.T) {
 
 			require.NoError(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)))
 
-			messages, err := adam.AsksFor(question.NATSMessagesFrom(subject))
+			messages, err := adam.AsksFor(messages.FromTheSubject(subject))
 			require.NoError(t, err)
 			require.Len(t, messages, 1)
 			assert.Equal(t, content, messages[0].Data)

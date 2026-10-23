@@ -1,8 +1,7 @@
-package question_test
+package messages_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/grandper/go-screenplay/v2/action/see"
 	"github.com/grandper/go-screenplay/v2/question/last"
@@ -18,21 +17,16 @@ import (
 	"github.com/grandper/go-screenplay-nats/v2/action/receive"
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
-	"github.com/grandper/go-screenplay-nats/v2/question"
+	"github.com/grandper/go-screenplay-nats/v2/question/messages"
 )
 
-const (
-	timeout      = 2 * time.Second
-	tickInterval = 100 * time.Millisecond
-)
-
-func TestNATSMessages(t *testing.T) {
+func TestFromTheSubject(t *testing.T) {
 	const (
 		orders   = "orders"
 		invoices = "invoices"
 	)
 
-	t.Run("answers with the messages received by the actor", func(t *testing.T) {
+	t.Run("answers with the messages the actor received from the subject", func(t *testing.T) {
 		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
 		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 		require.NoError(t, adam.AttemptsTo(
@@ -46,54 +40,40 @@ func TestNATSMessages(t *testing.T) {
 			receive.TheNextMessageFrom(orders),
 		))
 
-		t.Run("all of them, in the order they were received", func(t *testing.T) {
-			messages, err := adam.AsksFor(question.NATSMessages())
+		t.Run("in the order they were received", func(t *testing.T) {
+			received, err := adam.AsksFor(messages.FromTheSubject(orders))
 
 			require.NoError(t, err)
-			require.Len(t, messages, 3)
-			assert.Equal(t, []byte("1"), messages[0].Data)
-			assert.Equal(t, []byte("2"), messages[1].Data)
-			assert.Equal(t, []byte("3"), messages[2].Data)
-		})
-
-		t.Run("those from a subject", func(t *testing.T) {
-			messages, err := adam.AsksFor(question.NATSMessagesFrom(orders))
-
-			require.NoError(t, err)
-			require.Len(t, messages, 2)
-			assert.Equal(t, []byte("1"), messages[0].Data)
-			assert.Equal(t, []byte("3"), messages[1].Data)
+			require.Len(t, received, 2)
+			assert.Equal(t, []byte("1"), received[0].Data)
+			assert.Equal(t, []byte("3"), received[1].Data)
 		})
 
 		t.Run("none from a subject nothing was received from", func(t *testing.T) {
-			messages, err := adam.AsksFor(question.NATSMessagesFrom("payments"))
+			received, err := adam.AsksFor(messages.FromTheSubject("payments"))
 
 			require.NoError(t, err)
-			assert.Empty(t, messages)
+			assert.Empty(t, received)
 		})
 
 		t.Run("can be composed with the core questions", func(t *testing.T) {
-			require.NoError(t, adam.Should(see.The(number.Of(question.NATSMessages())).Should(be.EqualTo(3))))
-			lastMessage, err := adam.AsksFor(last.Of(question.NATSMessagesFrom(orders)))
+			require.NoError(t, adam.Should(see.The(number.Of(messages.FromTheSubject(orders))).Should(be.EqualTo(2))))
+			lastMessage, err := adam.AsksFor(last.Of(messages.FromTheSubject(orders)))
 			require.NoError(t, err)
 			assert.Equal(t, []byte("3"), lastMessage.Data)
 		})
 	})
 
 	t.Run("fails when the actor cannot communicate with NATS", func(t *testing.T) {
-		_, err := screenplay.ActorNamed("Adam").AsksFor(question.NATSMessages())
-		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
-		_, err = screenplay.ActorNamed("Adam").AsksFor(question.NATSMessagesFrom(orders))
+		_, err := screenplay.ActorNamed("Adam").AsksFor(messages.FromTheSubject(orders))
 		require.ErrorIs(t, err, screenplay.ErrActorMissingAbility)
 	})
 
 	t.Run("implements the stringer interface", func(t *testing.T) {
-		assert.Equal(t, "NATS messages", question.NATSMessages().String())
-		assert.Equal(t, `NATS messages from "orders"`, question.NATSMessagesFrom(orders).String())
+		assert.Equal(t, `NATS messages from the subject "orders"`, messages.FromTheSubject(orders).String())
 	})
 
 	t.Run("implements the question interface", func(t *testing.T) {
-		assert.Implements(t, (*screenplay.Question[[]*nats.Msg])(nil), question.NATSMessages())
-		assert.Implements(t, (*screenplay.Question[[]*nats.Msg])(nil), question.NATSMessagesFrom(orders))
+		assert.Implements(t, (*screenplay.Question[[]*nats.Msg])(nil), messages.FromTheSubject(orders))
 	})
 }

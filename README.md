@@ -1,12 +1,18 @@
 # go-screenplay-nats
+
+[![Test](https://github.com/grandper/go-screenplay-nats/actions/workflows/go-test.yml/badge.svg)](https://github.com/grandper/go-screenplay-nats/actions/workflows/go-test.yml)
+[![Lint](https://github.com/grandper/go-screenplay-nats/actions/workflows/go-lint.yml/badge.svg)](https://github.com/grandper/go-screenplay-nats/actions/workflows/go-lint.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/grandper/go-screenplay-nats/v2.svg)](https://pkg.go.dev/github.com/grandper/go-screenplay-nats/v2)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 This project is an extension of [go-screenplay](https://github.com/grandper/go-screenplay) to drive a NATS server. It bundles the ability to communicate with NATS together with the actions, questions and resolutions that go with it, so you test a messaging scenario with the same screenplay vocabulary you use everywhere else. A test reads as English, and everything the actor does is narrated:
 ```go
 actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
 
 err := actor.AttemptsTo(subscribe.To("orders"))
 // NATS User attempts to subscribe to "orders"
-err = actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
-// NATS User should see that the NATS messages from "orders" should have been received
+err = actor.Should(see.The(messages.FromTheSubject("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from the subject "orders" should have been received
 ```
 
 ## Installation
@@ -14,27 +20,6 @@ err = actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.
 go get github.com/grandper/go-screenplay-nats/v2
 ```
 It requires go-screenplay v2.
-
-## Packages
-The symbols shown below live in these packages:
-
-| Package | Import path | Provides |
-|---------|-------------|----------|
-| `ability` | `github.com/grandper/go-screenplay-nats/v2/ability` | `CommunicateWithNATS`, `Connection`, `ErrNATSConnectionNotSet`, `ErrFailedToConnect`, `ErrAlreadyConnected`, `ErrSubscriptionAlreadyExists`, `ErrNoSubscriptionFound` |
-| `action` | `github.com/grandper/go-screenplay-nats/v2/action` | `ErrURLIsEmpty`, `ErrSubjectIsEmpty`, `ErrQueueIsEmpty`, `ErrInvalidHeaders` |
-| `connect` | `github.com/grandper/go-screenplay-nats/v2/action/connect` | `ToTheNATSServerAt` |
-| `subscribe` | `github.com/grandper/go-screenplay-nats/v2/action/subscribe` | `To`, `ToTheSubjectsStartingWith` |
-| `unsubscribe` | `github.com/grandper/go-screenplay-nats/v2/action/unsubscribe` | `From` |
-| `publish` | `github.com/grandper/go-screenplay-nats/v2/action/publish` | `TheMessage`, `TheBinaryMessage`, `AnEmptyMessage` |
-| `send` | `github.com/grandper/go-screenplay-nats/v2/action/send` | `TheRequest`, `TheBinaryRequest`, `AnEmptyRequest` |
-| `receive` | `github.com/grandper/go-screenplay-nats/v2/action/receive` | `TheNextMessageFrom` |
-| `flush` | `github.com/grandper/go-screenplay-nats/v2/action/flush` | `TheNATSConnection` |
-| `question` | `github.com/grandper/go-screenplay-nats/v2/question` | `NATSConnection`, `NATSMessages`, `NATSMessagesFrom` |
-| `fixture` (of `question`) | `github.com/grandper/go-screenplay-nats/v2/question/fixture` | `CreateFakeConnection`, `CreateFakeClosedConnection`, `CreateFakeDisconnectedConnection`, `CreateFakeReconnectedConnection` |
-| `been` | `github.com/grandper/go-screenplay-nats/v2/resolution/been` | `Closed`, `Disconnected`, `Reconnected`, `Received`, `ReceivedFrom` |
-| `fixture` | `github.com/grandper/go-screenplay-nats/v2/fixture` | `ConnectToAnEmbeddedNATSServer`, `RunAnEmbeddedNATSServer` |
-
-Assertions are written with the core screenplay packages (`action/see`, `question/last`, `question/number`, `resolution/be`, ...). The extension's `question` and `fixture` packages share their name with core packages: when a file uses both, keep the core name and alias the extension package with the `nats` prefix.
 
 ## Ability
 This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `UsingTheConnection(nc)`, reading "communicate with NATS using the connection nc", or the URL of a server with `UsingTheServerAt("nats://localhost:4222")`, reading "communicate with NATS using the server at nats://localhost:4222".
@@ -54,7 +39,8 @@ import (
     "github.com/grandper/go-screenplay-nats/v2/action/subscribe"
     "github.com/grandper/go-screenplay-nats/v2/action/unsubscribe"
     "github.com/grandper/go-screenplay-nats/v2/fixture"
-    "github.com/grandper/go-screenplay-nats/v2/question"
+    "github.com/grandper/go-screenplay-nats/v2/question/connection"
+    "github.com/grandper/go-screenplay-nats/v2/question/messages"
     "github.com/grandper/go-screenplay-nats/v2/resolution/been"
 )
 ```
@@ -175,7 +161,7 @@ err := actor.AttemptsTo(publish.TheMessage("Hello, World!").To("orders").WithThe
 ```
 
 ### send.TheRequest
-Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `question.NATSMessagesFrom(subject)` finds it. The request holds a text (`TheRequest`), bytes (`TheBinaryRequest`) or nothing (`AnEmptyRequest`), and carries headers as a published message does. The actor waits at most five seconds, unless `TimingOutAfter` is written:
+Sends a request to the subject given with `To` and waits for its reply, which is stored under the subject of the request, where `messages.FromTheSubject(subject)` finds it. The request holds a text (`TheRequest`), bytes (`TheBinaryRequest`) or nothing (`AnEmptyRequest`), and carries headers as a published message does. The actor waits at most five seconds, unless `TimingOutAfter` is written:
 ```go
 err := actor.AttemptsTo(send.TheRequest("ping").To("orders"))
 // NATS User attempts to send the request "ping" to "orders"
@@ -189,7 +175,7 @@ err := actor.AttemptsTo(send.TheRequest("ping").To("orders").WithTheHeader("Key"
 A request nobody answers fails with `nats.ErrNoResponders`; a reply that does not come in time fails with an error wrapping `nats.ErrTimeout`. A deadline or a cancellation set on the actor's context stops the request as well.
 
 ### receive.TheNextMessageFrom
-Receives the next message of a synchronous subscription and stores it, where `question.NATSMessagesFrom(subject)` finds it. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`):
+Receives the next message of a synchronous subscription and stores it, where `messages.FromTheSubject(subject)` finds it. The actor waits at most its timeout (two seconds by default, see `screenplay.WithTimeout`):
 ```go
 err := actor.AttemptsTo(receive.TheNextMessageFrom("orders"))
 // NATS User attempts to receive the next message from "orders"
@@ -206,87 +192,55 @@ err := actor.AttemptsTo(flush.TheNATSConnection())
 ## Questions
 A question is a noun phrase that the actor asks for, and its answer is typed: `see.The`, `AsksFor` and the core questions such as `last.Of` and `number.Of` work on it without any type assertion.
 
-### NATSConnection
-`question.NATSConnection()` answers with an `*ability.Connection`, a snapshot of what happened to the connection of the actor, read through `WasClosed()`, `WasDisconnected()` and `WasReconnected()`. It is taken when the question is answered and does not change afterwards, so ask the question again to observe a later state:
+### connection.ToTheNATSServer
+`connection.ToTheNATSServer()` answers with an `*ability.Connection`, a snapshot of what happened to the connection of the actor, read through `WasClosed()`, `WasDisconnected()` and `WasReconnected()`. It is taken when the question is answered and does not change afterwards, so ask the question again to observe a later state:
 ```go
-err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
-// NATS User should see that the NATS connection should have been closed
-err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Disconnected()))
-err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Reconnected()))
-connection, err := actor.AsksFor(question.NATSConnection()) // connection is an *ability.Connection
+err := actor.Should(see.The(connection.ToTheNATSServer()).ShouldHave(been.Closed()))
+// NATS User should see that the connection to the NATS server should have been closed
+err := actor.Should(see.The(connection.ToTheNATSServer()).ShouldHave(been.Disconnected()))
+err := actor.Should(see.The(connection.ToTheNATSServer()).ShouldHave(been.Reconnected()))
+status, err := actor.AsksFor(connection.ToTheNATSServer()) // status is an *ability.Connection
 ```
 
-### NATSMessages
-`question.NATSMessages()` answers with the `[]*nats.Msg` received by the actor, in the order they were received: the messages of its subscriptions and the replies to its requests. `question.NATSMessagesFrom(subject)` keeps the messages of the subscription to that subject, or the replies to the requests sent to it:
+### messages.FromTheSubject
+`messages.FromTheSubject(subject)` answers with the `[]*nats.Msg` the actor received from that subject, in the order they were received: the messages of its subscription to the subject, or the replies to the requests sent to it. `messages.FromAnySubject()` answers with every message the actor received, whatever the subject:
 ```go
-err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.Received()))
-// NATS User should see that the NATS messages should have been received
-err := actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
-// NATS User should see that the NATS messages from "orders" should have been received
-err := actor.Should(see.The(number.Of(question.NATSMessagesFrom("orders"))).Should(be.EqualTo(2)))
-lastOrder, err := actor.AsksFor(last.Of(question.NATSMessagesFrom("orders"))) // lastOrder is a *nats.Msg
+err := actor.Should(see.The(messages.FromTheSubject("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from the subject "orders" should have been received
+err := actor.Should(see.The(messages.FromAnySubject()).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from any subject should have been received
+err := actor.Should(see.The(number.Of(messages.FromTheSubject("orders"))).Should(be.EqualTo(2)))
+lastOrder, err := actor.AsksFor(last.Of(messages.FromTheSubject("orders"))) // lastOrder is a *nats.Msg
 ```
 
 ### Fake answers
-The `question/fixture` package builds the answer of `NATSConnection` without a server, to test code that receives it:
+The `question/fixture` package builds the answer of `connection.ToTheNATSServer()` without a server, to test code that receives it:
 ```go
-connection := fixture.CreateFakeConnection()             // nothing happened to it
-connection := fixture.CreateFakeClosedConnection()       // disconnected, then closed
-connection := fixture.CreateFakeDisconnectedConnection() // disconnected, not reconnected yet
-connection := fixture.CreateFakeReconnectedConnection()  // disconnected, then reconnected
+status := fixture.CreateFakeConnection()             // nothing happened to it
+status := fixture.CreateFakeClosedConnection()       // disconnected, then closed
+status := fixture.CreateFakeDisconnectedConnection() // disconnected, not reconnected yet
+status := fixture.CreateFakeReconnectedConnection()  // disconnected, then reconnected
 ```
 
 ## Resolutions
 The `been` package holds the resolutions of this extension. Each one reads after the verb `ShouldHave`, and a negation lives only in the verb: `ShouldNotHave(been.Closed())` reads "should not have been closed".
 
-`been.Closed()`, `been.Disconnected()` and `been.Reconnected()` inspect the answer of `question.NATSConnection()`. A connection that has been closed or reconnected has been disconnected first:
+`been.Closed()`, `been.Disconnected()` and `been.Reconnected()` inspect the answer of `connection.ToTheNATSServer()`. A connection that has been closed or reconnected has been disconnected first:
 ```go
-err := actor.Should(see.The(question.NATSConnection()).ShouldHave(been.Closed()))
-// NATS User should see that the NATS connection should have been closed
-// fails: NATS User failed to see that the NATS connection should have been closed: it has not been closed
-err := actor.Should(see.The(question.NATSConnection()).ShouldNotHave(been.Disconnected()))
-// NATS User should see that the NATS connection should not have been disconnected
+err := actor.Should(see.The(connection.ToTheNATSServer()).ShouldHave(been.Closed()))
+// NATS User should see that the connection to the NATS server should have been closed
+// fails: NATS User failed to see that the connection to the NATS server should have been closed: it has not been closed
+err := actor.Should(see.The(connection.ToTheNATSServer()).ShouldNotHave(been.Disconnected()))
+// NATS User should see that the connection to the NATS server should not have been disconnected
 ```
-`been.Received()` and `been.ReceivedFrom(subject)` inspect the answer of `question.NATSMessages()` or `question.NATSMessagesFrom(subject)`. The subject of `ReceivedFrom` is the one a message was published to, so a message received through a wildcard subscription matches its own subject:
+`been.Received()` and `been.ReceivedFrom(subject)` inspect the answer of `messages.FromAnySubject()` or `messages.FromTheSubject(subject)`. The subject of `ReceivedFrom` is the one a message was published to, so a message received through a wildcard subscription matches its own subject:
 ```go
-err := actor.Should(see.The(question.NATSMessagesFrom("orders")).ShouldHave(been.Received()))
-// NATS User should see that the NATS messages from "orders" should have been received
-// fails: NATS User failed to see that the NATS messages from "orders" should have been received: no message has been received
-err := actor.Should(see.The(question.NATSMessages()).ShouldHave(been.ReceivedFrom("orders.created")))
-// NATS User should see that the NATS messages should have been received from "orders.created"
+err := actor.Should(see.The(messages.FromTheSubject("orders")).ShouldHave(been.Received()))
+// NATS User should see that the NATS messages from the subject "orders" should have been received
+// fails: NATS User failed to see that the NATS messages from the subject "orders" should have been received: no message has been received
+err := actor.Should(see.The(messages.FromAnySubject()).ShouldHave(been.ReceivedFrom("orders.created")))
+// NATS User should see that the NATS messages from any subject should have been received from "orders.created"
 ```
-
-## Migrating from v1
-Version 2 follows go-screenplay v2 and its guide for writing an extension: a test only reaches the actor, every statement reads as English and is narrated word for word, and no struct of the extension can be named. The changes were made one concept at a time:
-
-1. the module became `github.com/grandper/go-screenplay-nats/v2`;
-2. the dependency became go-screenplay v2: questions and resolutions are typed, the verb is `ShouldHave`;
-3. the operations of the ability moved to `internal/ability`, behind `TheAbilityOf(actor)`;
-4. the actions moved to packages named after their verb, and the message is built on the publish and send actions, whose constructors take the payload;
-5. the questions return `screenplay.Question[T]`, with fake connections in `question/fixture`;
-6. the resolutions are built with `resolution.FromFunc` and closed by a verb.
-
-| v1 | v2 |
-|----|----|
-| `ability.CommunicateWithNATS().UsingTheConnection(nc)` | unchanged |
-| `ability.CommunicateWithNATS().UsingTheServerAt(url)` | unchanged; the connection is opened by the first action |
-| `ability.Message().To(s).Containing(d).WithHeader(k, v).WithHeaders(h).ToBeRepliedTo(r)` | `publish.TheMessage(text).To(s).WithTheHeader(k, v).WithTheHeaders(k, v, ...).ExpectingAReplyOn(r)`; `TheBinaryMessage(bytes)` and `AnEmptyMessage()` for the other payloads |
-| `action.ConnectToNATS().At(url)` | `connect.ToTheNATSServerAt(url)` |
-| `action.SubscribeTo(s)` and its chain | `subscribe.To(s)`; `UsingTheQueue(q)` became `InTheQueueGroup(q)` |
-| `action.SubscribeToTheSubjectStartingWith(p)` | `subscribe.ToTheSubjectsStartingWith(p)` |
-| `action.UnsubscribeFrom(s)` | `unsubscribe.From(s)` |
-| `action.Publish(message)` | `publish.TheMessage(text).To(s)` |
-| `action.Request(message).For(n).Seconds()` | `send.TheRequest(text).To(s).TimingOutAfter(n).Seconds()`; `TheBinaryRequest(bytes)` and `AnEmptyRequest()` for the other payloads |
-| `action.ReceiveFrom(s)` | `receive.TheNextMessageFrom(s)`, waiting at most the actor's timeout |
-| `action.Flush()` | `flush.TheNATSConnection()` |
-| `question.NATSMessages().From(s)` | `question.NATSMessagesFrom(s)` |
-| `see.The(q).Has(been.Closed())`, `see.The(q).Have(been.Received())` | `see.The(q).ShouldHave(...)` |
-| `been.Received().From(s)` | `been.ReceivedFrom(s)` |
-| `ability.ErrSubjectIsEmpty`, `ability.ErrQueueIsEmpty`, `action.ErrFailedToConnect` | `action.ErrSubjectIsEmpty`, `action.ErrQueueIsEmpty`, `ability.ErrFailedToConnect` |
-| `ability.ErrMessageIsNil`, `ability.ErrNoMessageForSubject` | gone: no statement can build a nil message |
-| `fixture.CreateEmbeddedNATSServer(t)`, `fixture.RunNATSServer(t)` | `fixture.ConnectToAnEmbeddedNATSServer(t)`, `fixture.RunAnEmbeddedNATSServer(t)` |
-
-Two behaviors changed: `UsingTheServerAt` no longer connects when the actor is created, so an unreachable server is reported by the first action; and connecting an actor that already holds a connection fails with `ability.ErrAlreadyConnected` instead of being ignored.
 
 ## Testing with an embedded NATS server
 The `fixture` package runs an in-process NATS server so scenarios can run without an external broker. Both helpers take a `*testing.T` and register their own cleanup, so the server is shut down when the test ends:
@@ -314,7 +268,7 @@ func TestReceivesAPublishedMessage(t *testing.T) {
     ))
 
     require.NoError(t, actor.Should(
-        see.The(question.NATSMessagesFrom("greetings")).ShouldHave(been.Received()),
+        see.The(messages.FromTheSubject("greetings")).ShouldHave(been.Received()),
     ))
 }
 ```
