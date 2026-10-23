@@ -5,7 +5,7 @@ import (
 	screenplayfixture "github.com/grandper/go-screenplay/v2/screenplay/fixture"
 	"github.com/nats-io/nats.go"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 )
 
 // NarratedActor creates an actor whose narration is recorded by the recorder,
@@ -15,5 +15,5 @@ func NarratedActor(name string, recorder *screenplayfixture.Recorder, nc *nats.C
 
 	return production.SetTheStage(screenplay.CastOfStandardActors()).
 		ActorNamed(name).
-		WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+		WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 }

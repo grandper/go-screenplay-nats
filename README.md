@@ -7,7 +7,7 @@
 
 This project is an extension of [go-screenplay](https://github.com/grandper/go-screenplay) to drive a NATS server. It bundles the ability to communicate with NATS together with the actions, questions and resolutions that go with it, so you test a messaging scenario with the same screenplay vocabulary you use everywhere else. A test reads as English, and everything the actor does is narrated:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+actor := screenplay.ActorNamed("NATS User").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 err := actor.AttemptsTo(subscribe.To("orders"))
 // NATS User attempts to subscribe to "orders"
@@ -22,7 +22,7 @@ go get github.com/grandper/go-screenplay-nats/v2
 It requires go-screenplay v2.
 
 ## Ability
-This package provides the `CommunicateWithNATS` ability, which allows an actor to interact with a NATS server. The `CommunicateWithNATS` ability is given an existing NATS connection with `UsingTheConnection(nc)`, reading "communicate with NATS using the connection nc", or the URL of a server with `UsingTheServerAt("nats://localhost:4222")`, reading "communicate with NATS using the server at nats://localhost:4222".
+This package provides one ability, `communicate.WithNATS()`, which allows an actor to interact with a NATS server and reads "who can communicate with NATS". It is given an existing NATS connection with `UsingTheConnection(nc)`, reading "who can communicate with NATS using the connection nc", or the URL of a server with `UsingTheServerAt("nats://localhost:4222")`, reading "who can communicate with NATS using the server at nats://localhost:4222".
 
 First, import the package:
 ```go
@@ -31,6 +31,7 @@ import (
     "github.com/grandper/go-screenplay/v2/screenplay"
     "github.com/grandper/go-screenplay/v2/action/see"
     "github.com/grandper/go-screenplay-nats/v2/ability"
+    "github.com/grandper/go-screenplay-nats/v2/ability/communicate"
     "github.com/grandper/go-screenplay-nats/v2/action/connect"
     "github.com/grandper/go-screenplay-nats/v2/action/flush"
     "github.com/grandper/go-screenplay-nats/v2/action/publish"
@@ -49,19 +50,19 @@ Then create a connection to the NATS server:
 nc, _ := nats.Connect(nats.DefaultURL)
 nc, _ := nats.Connect("nats://localhost:4222", nats.UserInfo("username", "password"))
 ```
-Finally, create an actor and give it the `CommunicateWithNATS` ability:
+Finally, create an actor who can communicate with NATS:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+actor := screenplay.ActorNamed("NATS User").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 ```
 Alternatively, let the ability open the connection itself from a server URL. The connection is opened the first time the actor uses the ability, so an unreachable server is reported by the first action, with an error wrapping `ability.ErrFailedToConnect`:
 ```go
-actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheServerAt("nats://localhost:4222"))
+actor := screenplay.ActorNamed("NATS User").WhoCan(communicate.WithNATS().UsingTheServerAt("nats://localhost:4222"))
 ```
 An actor without a connection or a URL fails every action with `ability.ErrNATSConnectionNotSet`, "no connection to NATS was given", until it performs the `connect.ToTheNATSServerAt` action.
 
-> **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `Using` or opened by the ability itself.
+> **_NOTE:_** When the actor exits (`actor.Exit()`), the ability forgets what it holds: every subscription is dropped and the connection is closed, whether it was given with `UsingTheConnection` or opened by the ability itself.
 
-`Using` and `UsingTheServerAt` are the only methods a test can call on the ability. Its operations live in `internal/ability`, so only an action or a question of this package uses them, in one statement written in `PerformAs` or `AnsweredBy` that reads "the ability of the actor to publish":
+`UsingTheConnection` and `UsingTheServerAt` are the only methods a test can call on the ability. Its operations live in `internal/ability`, so only an action or a question of this package uses them, in one statement written in `PerformAs` or `AnsweredBy` that reads "the ability of the actor to publish":
 ```go
 err := impl.TheAbilityOf(theActor).ToPublish(message)
 ```
@@ -258,7 +259,7 @@ A complete scenario, from spinning up the embedded server to asserting on receiv
 ```go
 func TestReceivesAPublishedMessage(t *testing.T) {
     nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-    actor := screenplay.ActorNamed("NATS User").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+    actor := screenplay.ActorNamed("NATS User").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
     require.NoError(t, actor.AttemptsTo(
         subscribe.To("greetings"),

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/action/connect"
 	"github.com/grandper/go-screenplay-nats/v2/action/flush"
@@ -20,7 +21,7 @@ func TestToTheNATSServerAt(t *testing.T) {
 	t.Run("connects to the NATS server", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			natsServer := fixture.RunAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 
 			require.NoError(t, adam.AttemptsTo(connect.ToTheNATSServerAt(natsServer.ClientURL())))
 
@@ -30,19 +31,19 @@ func TestToTheNATSServerAt(t *testing.T) {
 		})
 
 		t.Run("fails when the URL is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(connect.ToTheNATSServerAt("")), action.ErrURLIsEmpty)
 		})
 
 		t.Run("fails when the server cannot be reached", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			err := adam.AttemptsTo(connect.ToTheNATSServerAt("nats://invalid:4222"))
 			require.ErrorIs(t, err, ability.ErrFailedToConnect)
 		})
 
 		t.Run("fails when the actor is already connected", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			err := adam.AttemptsTo(connect.ToTheNATSServerAt(nc.ConnectedUrl()))
 			require.ErrorIs(t, err, ability.ErrAlreadyConnected)
 		})

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/action/receive"
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
@@ -26,7 +27,7 @@ func TestTheNextMessageFrom(t *testing.T) {
 	t.Run("receives the next message", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.NoError(t, nc.Publish(subject, content))
 
@@ -43,7 +44,7 @@ func TestTheNextMessageFrom(t *testing.T) {
 			production := screenplay.NewProduction(screenplay.WithTimeout(50 * time.Millisecond))
 			adam := production.SetTheStage(screenplay.CastOfStandardActors()).
 				ActorNamed("Adam").
-				WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+				WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 
 			start := time.Now()
@@ -54,18 +55,18 @@ func TestTheNextMessageFrom(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(receive.TheNextMessageFrom("")), action.ErrSubjectIsEmpty)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)), ability.ErrNATSConnectionNotSet)
 		})
 
 		t.Run("fails when there is no subscription to the subject", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.ErrorIs(t, adam.AttemptsTo(receive.TheNextMessageFrom(subject)), ability.ErrNoSubscriptionFound)
 		})
 

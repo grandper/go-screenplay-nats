@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action/publish"
 	"github.com/grandper/go-screenplay-nats/v2/action/receive"
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
@@ -27,7 +27,7 @@ func TestFromAnySubject(t *testing.T) {
 
 	t.Run("answers with every message the actor received", func(t *testing.T) {
 		nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+		adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 		require.NoError(t, adam.AttemptsTo(
 			subscribe.To(orders),
 			subscribe.To(invoices),

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
 	"github.com/grandper/go-screenplay-nats/v2/action/unsubscribe"
@@ -22,7 +23,7 @@ func TestFrom(t *testing.T) {
 	t.Run("unsubscribes from a subject", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.Equal(t, 1, nc.NumSubscriptions())
 
@@ -32,18 +33,18 @@ func TestFrom(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(unsubscribe.From("")), action.ErrSubjectIsEmpty)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(unsubscribe.From(subject)), ability.ErrNATSConnectionNotSet)
 		})
 
 		t.Run("fails when there is no subscription to the subject", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.ErrorIs(t, adam.AttemptsTo(unsubscribe.From(subject)), ability.ErrNoSubscriptionFound)
 		})
 

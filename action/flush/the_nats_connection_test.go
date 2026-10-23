@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action/flush"
 	"github.com/grandper/go-screenplay-nats/v2/action/publish"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
@@ -19,14 +20,14 @@ func TestTheNATSConnection(t *testing.T) {
 	t.Run("flushes the connection", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(publish.AnEmptyMessage().To("orders")))
 
 			require.NoError(t, adam.AttemptsTo(flush.TheNATSConnection()))
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(flush.TheNATSConnection()), ability.ErrNATSConnectionNotSet)
 		})
 

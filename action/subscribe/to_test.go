@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/action/receive"
 	"github.com/grandper/go-screenplay-nats/v2/action/subscribe"
@@ -26,7 +27,7 @@ func TestTo(t *testing.T) {
 	t.Run("subscribes to a subject", func(t *testing.T) {
 		t.Run("synchronously by default", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 
@@ -37,7 +38,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("synchronously", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).Synchronously()))
 
@@ -47,7 +48,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("asynchronously", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).Asynchronously()))
 
@@ -58,7 +59,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("using a queue", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup(queue)))
 
@@ -67,7 +68,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("using a queue asynchronously", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup(queue).Asynchronously()))
 
@@ -77,7 +78,7 @@ func TestTo(t *testing.T) {
 
 		t.Run("and unsubscribes after a number of messages", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject).AndUnsubscribeAfter(1).Message()))
 
@@ -87,23 +88,23 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.To("")), action.ErrSubjectIsEmpty)
 		})
 
 		t.Run("fails when the queue is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject).InTheQueueGroup("")), action.ErrQueueIsEmpty)
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject)), ability.ErrNATSConnectionNotSet)
 		})
 
 		t.Run("fails when the subscription already exists", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, adam.AttemptsTo(subscribe.To(subject)))
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.To(subject)), ability.ErrSubscriptionAlreadyExists)
 		})
@@ -117,7 +118,7 @@ func TestTo(t *testing.T) {
 	t.Run("subscribes to the subjects starting with a prefix", func(t *testing.T) {
 		t.Run("successfully", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			require.NoError(t, adam.AttemptsTo(subscribe.ToTheSubjectsStartingWith(subject)))
 
@@ -126,7 +127,7 @@ func TestTo(t *testing.T) {
 		})
 
 		t.Run("fails when the prefix is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(subscribe.ToTheSubjectsStartingWith("")), action.ErrSubjectIsEmpty)
 		})
 	})

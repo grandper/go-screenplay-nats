@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/action"
 	"github.com/grandper/go-screenplay-nats/v2/action/publish"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
@@ -27,7 +28,7 @@ func TestTheMessage(t *testing.T) {
 	t.Run("publishes a message", func(t *testing.T) {
 		t.Run("with a text", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -43,7 +44,7 @@ func TestTheMessage(t *testing.T) {
 
 		t.Run("with binary content", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -56,7 +57,7 @@ func TestTheMessage(t *testing.T) {
 
 		t.Run("with no content", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -69,7 +70,7 @@ func TestTheMessage(t *testing.T) {
 
 		t.Run("with headers, expecting a reply", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			sub, err := nc.SubscribeSync(subject)
 			require.NoError(t, err)
 
@@ -89,13 +90,13 @@ func TestTheMessage(t *testing.T) {
 		})
 
 		t.Run("fails when the subject is empty", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(publish.TheMessage(text)), action.ErrSubjectIsEmpty)
 			require.ErrorIs(t, adam.AttemptsTo(publish.TheMessage(text).To("")), action.ErrSubjectIsEmpty)
 		})
 
 		t.Run("fails when the headers are written wrongly", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			err := adam.AttemptsTo(publish.TheMessage(text).To(subject).WithTheHeader("", "value"))
 			require.ErrorIs(t, err, action.ErrInvalidHeaders)
 			require.EqualError(t, err, "invalid headers: a key cannot be empty")
@@ -110,7 +111,7 @@ func TestTheMessage(t *testing.T) {
 		})
 
 		t.Run("fails when the connection is not set", func(t *testing.T) {
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 			require.ErrorIs(t, adam.AttemptsTo(publish.TheMessage(text).To(subject)), ability.ErrNATSConnectionNotSet)
 		})
 

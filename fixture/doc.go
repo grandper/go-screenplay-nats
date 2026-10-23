@@ -2,5 +2,5 @@
 // without an external broker:
 //
 //	nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-//	anActor := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+//	anActor := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 package fixture

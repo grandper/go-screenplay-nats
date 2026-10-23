@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grandper/go-screenplay-nats/v2/ability"
+	"github.com/grandper/go-screenplay-nats/v2/ability/communicate"
 	"github.com/grandper/go-screenplay-nats/v2/fixture"
 	"github.com/grandper/go-screenplay-nats/v2/question/connection"
 )
@@ -22,7 +23,7 @@ func TestToTheNATSServer(t *testing.T) {
 	t.Run("answers with what happened to the connection", func(t *testing.T) {
 		t.Run("nothing yet", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 
 			answer, err := adam.AsksFor(connection.ToTheNATSServer())
 
@@ -34,7 +35,7 @@ func TestToTheNATSServer(t *testing.T) {
 
 		t.Run("the connection was closed", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			nc.Close()
 
 			assert.Eventually(t, func() bool {
@@ -45,7 +46,7 @@ func TestToTheNATSServer(t *testing.T) {
 
 		t.Run("the connection was reconnected", func(t *testing.T) {
 			nc := fixture.ConnectToAnEmbeddedNATSServer(t)
-			adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS().UsingTheConnection(nc))
+			adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS().UsingTheConnection(nc))
 			require.NoError(t, nc.ForceReconnect())
 
 			assert.Eventually(t, func() bool {
@@ -61,7 +62,7 @@ func TestToTheNATSServer(t *testing.T) {
 	})
 
 	t.Run("fails when the connection is not set", func(t *testing.T) {
-		adam := screenplay.ActorNamed("Adam").WhoCan(ability.CommunicateWithNATS())
+		adam := screenplay.ActorNamed("Adam").WhoCan(communicate.WithNATS())
 		_, err := adam.AsksFor(connection.ToTheNATSServer())
 		require.ErrorIs(t, err, ability.ErrNATSConnectionNotSet)
 	})
