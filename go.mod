@@ -25,6 +25,3 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// go-screenplay v2.0.0 is not tagged yet: build against the release branch checked out next to this repository.
-replace github.com/grandper/go-screenplay/v2 => ../go-screenplay
